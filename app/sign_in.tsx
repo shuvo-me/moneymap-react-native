@@ -1,4 +1,8 @@
-import { Apple, Chrome, Heart, LogIn } from "@tamagui/lucide-icons-2";
+import { signInWithGoogle } from "@/services/auth.service";
+import { useAuthStore } from "@/store";
+import { Chrome, Heart, LogIn } from "@tamagui/lucide-icons-2";
+import { useMutation } from "@tanstack/react-query";
+import { Link, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
@@ -7,6 +11,7 @@ import {
   Separator,
   SizableText,
   Spacer,
+  Spinner,
   Text,
   XStack,
   YStack
@@ -14,13 +19,26 @@ import {
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
+  const setSession = useAuthStore((state) => state.setSession);
+  const { mutateAsync: signInWithGoogleMutation, isPending: isGoogleSignInPending } = useMutation({
+    mutationKey: ['google-sign-in'],
+    mutationFn: signInWithGoogle,
+    onSuccess: (data) => {
+      console.log('google sign in success', data);
+      setSession(data);
+      router.replace('/');
+    },
+    onError: (error) => {
+      console.log('google sign in error', error);
+    },
+  })
   return (
 
 
     <YStack f={1} jc="center" bg="$background" pt={insets.top + 20} pb={insets.bottom + 20 as number}>
 
       {/* Editorial Header Section */}
-      <YStack gap="$2" mb="$10" px={'$6'} ai={'center'}>
+      <YStack gap="$3" mb="$10" px={'$6'} ai={'center'}>
         <H2
           ff="$heading"
           fow="800"
@@ -76,9 +94,7 @@ export default function SignInScreen() {
               bg="$background"
               bw={0}
               br="$4"
-              placeholder="name@hearth.com"
-              ff="$body"
-              fos="$3"
+              placeholder="example@moneymap.com"
             />
           </YStack>
 
@@ -159,11 +175,12 @@ export default function SignInScreen() {
             bw={1}
             bc="$borderColor"
             bg="$background"
-            icon={<Chrome size={18} />}
+            icon={isGoogleSignInPending ? undefined : <Chrome size={18} />}
+            onPress={() => signInWithGoogleMutation()}
           >
-            <SizableText ff="$body" fow="600">Google</SizableText>
+            {isGoogleSignInPending ? <Spinner color={'$primary'} /> : <SizableText ff="$body" fow="600">Google</SizableText>}
           </Button>
-          <Button
+          {/* <Button
             f={1}
             h={56}
             br="$4"
@@ -173,7 +190,7 @@ export default function SignInScreen() {
             icon={<Apple size={18} />}
           >
             <SizableText ff="$body" fow="600">Apple</SizableText>
-          </Button>
+          </Button> */}
         </XStack>
       </YStack>
 
@@ -181,8 +198,11 @@ export default function SignInScreen() {
 
       {/* Footer Link */}
       <XStack jc="center" ai="center" gap="$2">
-        <SizableText col="$colorMuted" fos="$3">New to the hearth?</SizableText>
-        <SizableText col="$secondary" fow="700" fos="$3">Create Account</SizableText>
+        <SizableText col="$colorMuted" fos="$3">New to the MoneyMap?</SizableText>
+        <Link href="/sign_up">
+          <SizableText col="$secondary" fow="700" fos="$3">Create Account</SizableText>
+        </Link>
+
       </XStack>
 
     </YStack>

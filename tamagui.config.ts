@@ -55,6 +55,10 @@ const customTokens = createTokens({
     // Semantic Helpers
     border: '#31333015',
     card: '#f5f3f0',
+  },
+  radius:{
+    ...defaultTokens.radius,
+    full: 999999999
   }
 })
 

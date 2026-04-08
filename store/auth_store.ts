@@ -1,20 +1,34 @@
 // store.ts
+import { mmkvStorage } from '@/services/storage.service';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
-// Define types for state & actions
+
+interface User  {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    emailVerified: boolean;
+    createdAt: string | undefined;
+}
 interface AuthStoreState {
-    session: string | null;
-    setSession: (session: string) => void;
-    removeSession: () => void;
+  session: User | null;
+  setSession: (session: User) => void;
+  removeSession: () => void;
 }
 
-// Create store using the curried form of `create`
-export const useAuthStore = create<AuthStoreState>()(persist((set) => ({
-    session: null, // default value for session
-    setSession: (session: string) => set({ session }),
-    removeSession: () => set({ session: '' }),
-}), {
-    name: 'auth-storage', // name of the item in storage
-    partialize: (state) => ({ session: state.session }), // only persist the session
-}))
+export const useAuthStore = create<AuthStoreState>()(
+  persist(
+    (set) => ({
+      session: null,
+      setSession: (session) => set({ session }),
+      removeSession: () => set({ session: null }), 
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({ session: state.session }),
+    }
+  )
+);

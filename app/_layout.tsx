@@ -43,9 +43,14 @@ export default function RootLayout() {
     <TamaguiProvider config={config} defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <QueryClientProvider client={queryClient}>
-          <Stack>
-            <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-            <Stack.Screen name="sign_in" options={{ headerShown: false }} />
+          <Stack
+            screenOptions={{
+              headerShown: false
+            }}
+          >
+            <Stack.Screen name="(protected)" />
+            <Stack.Screen name="sign_in" />
+            <Stack.Screen name="sign_up" />
           </Stack>
         </QueryClientProvider>
       </ThemeProvider>
