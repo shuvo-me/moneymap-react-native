@@ -59,7 +59,7 @@ export default function HearthDashboard() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
         {/* Segmented Control: Consistent with Surface-Container-Low */}
-        <XStack bc="$card" p="$1.5" br="$9" jc={'center'} gap="$1" bw={1} boc="$border" my={'$6'}>
+        <XStack bc="$card" p="$1.5" br="$9" jc={'center'} gap="$1" bw={1} boc="$border" mt={'$6'}>
           <Button flex={1} size="$3" br="$9" bg="$background" fow="700" px="$6" elevation={2}>
             <Text ff="$body" fos="$2">All</Text>
           </Button>
@@ -72,7 +72,7 @@ export default function HearthDashboard() {
         </XStack>
 
         {/* Hero Spending Card: Uses Semantic primary tokens */}
-        <HearthCard mb="$10">
+        <HearthCard mb="$10" mt={'$4'}>
           <Text ff="$body" fos="$1" fow="700" col="$primary" ls={2} mb="$2" opacity={0.7}>
             SPENDING • THIS WEEK
           </Text>
