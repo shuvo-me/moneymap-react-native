@@ -1,151 +1,103 @@
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { LayoutDashboard, ListPlus, Settings } from '@tamagui/lucide-icons-2'
-import { Tabs } from 'expo-router'
-import { Dimensions, StyleSheet, TouchableOpacity } from 'react-native'
-import { Circle, styled, Text, XStack, YStack } from 'tamagui'
+import { QuickLogSheet } from "@/components/QuickLogSheet";
+import { LayoutDashboard, ListPlus, Settings } from "@tamagui/lucide-icons-2";
+import { TabList, Tabs, TabSlot, TabTrigger } from "expo-router/ui";
+import { useState } from "react";
+import { Dimensions, Pressable, StyleSheet } from "react-native";
+import { Circle, Text, YStack } from "tamagui";
 
-const { width } = Dimensions.get('window')
+const { width } = Dimensions.get("window");
 
-// --- Styled Components ---
-
-const FloatingBarContainer = styled(XStack, {
-  position: 'absolute',
-  bottom: 30,
-  left: width * 0.09, // Manual 5% offset for perfect centering
-  width: width * 0.8,  // 90% width
-  height: 68,
-  backgroundColor: '#ffffff',
-  borderRadius: 999,
-  ai: 'center',
-  jc: 'space-between',
-  // px: '$6',
-  borderWidth: 1,
-  borderColor: '#31333015',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 10 },
-  shadowOpacity: 0.1,
-  shadowRadius: 20,
-  elevation: 10,
-})
-
-const CenterAction = styled(Circle, {
-  size: 60,
-  backgroundColor: '$primary',
-  marginTop: -50, // Floating lift
-  borderWidth: 5,
-  borderColor: '$background', // Creates the "cutout" look against the screen
-  shadowColor: '$primary',
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.3,
-  shadowRadius: 10,
-  elevation: 6,
-  pressStyle: { scale: 0.92 },
-})
-
-// --- Custom TabBar Component ---
-
-function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export default function Layout() {
+  const [showQuickLog, setShowQuickLog] = useState<boolean>(false);
   return (
-    <FloatingBarContainer>
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key]
-        const isFocused = state.index === index
+    <>
+      <QuickLogSheet open={showQuickLog} onOpenChange={setShowQuickLog} />
+      <Tabs style={styles.outerContainer}>
+        {/* TabSlot renders the actual screen content */}
+        <TabSlot />
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          })
+        {/* TabList is the actual Bar */}
+        <TabList style={styles.floatingBar}>
+          <TabTrigger name="index" href="/" asChild>
+            <CustomTabButton icon={LayoutDashboard} label="Dashboard" />
+          </TabTrigger>
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name)
-          }
-        }
+          {/* <TabTrigger name="quick_log" href="/quick_log" asChild> */}
+          <RaisedActionButton onPress={() => setShowQuickLog(true)} />
+          {/* </TabTrigger> */}
 
-        // Logic for different routes
-        if (route.name === 'index') {
-          return (
-            <TabButton 
-              key={route.key} 
-              onPress={onPress} 
-              isFocused={isFocused} 
-              Icon={LayoutDashboard} 
-              label="Home" 
-            />
-          )
-        }
-
-        if (route.name === 'quick_log') {
-          return (
-            <TouchableOpacity key={route.key} onPress={onPress} activeOpacity={0.9}>
-              <CenterAction>
-                <ListPlus size={28} color="white" />
-              </CenterAction>
-            </TouchableOpacity>
-          )
-        }
-
-        if (route.name === 'settings') {
-          return (
-            <TabButton 
-              key={route.key} 
-              onPress={onPress} 
-              isFocused={isFocused} 
-              Icon={Settings} 
-              label="Settings" 
-            />
-          )
-        }
-      })}
-    </FloatingBarContainer>
-  )
+          <TabTrigger name="settings" href="/settings" asChild>
+            <CustomTabButton icon={Settings} label="Settings" />
+          </TabTrigger>
+        </TabList>
+      </Tabs>
+    </>
+  );
 }
 
-// --- Helper Button Component ---
+// --- Specialized Components ---
 
-const TabButton = ({ onPress, isFocused, Icon, label }: any) => (
-  <TouchableOpacity onPress={onPress} style={styles.tabItem}>
-    <YStack ai="center" jc="center" gap="$1">
-      <Icon 
-        size={24} 
-        color={isFocused ? '#546354' : '#5e5f5c'} 
-        strokeWidth={isFocused ? 2.5 : 2} 
-      />
-      <Text 
-        fos={10} 
-        fow={isFocused ? "800" : "500"} 
-        col={isFocused ? '$primary' : '$colorMuted'}
-        ls={0.5}
-      >
-        {label.toUpperCase()}
+// This component receives 'isFocused' automatically from TabTrigger
+const CustomTabButton = ({ icon: Icon, label, isFocused, ...props }: any) => {
+  const { style, ...navigation } = props;
+  return (
+    <YStack
+      {...navigation}
+      f={1}
+      ai="center"
+      justifyContent="center"
+      gap="$1"
+      opacity={isFocused ? 1 : 0.5}
+    >
+      <Icon size={24} color={isFocused ? "$primary" : "$colorMuted"} />
+      <Text ff="$body" fow="600" col={isFocused ? "$primary" : "$colorMuted"}>
+        {label}
       </Text>
     </YStack>
-  </TouchableOpacity>
-)
+  );
+};
 
-// --- Main Layout ---
-
-export default function TabLayout() {
-  return (
-      <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Tabs.Screen name="index" />
-        <Tabs.Screen name="quick_log" />
-        <Tabs.Screen name="settings" />
-      </Tabs>
-  )
-}
+const RaisedActionButton = ({ onPress }: { onPress: () => void }) => (
+  <Pressable
+    onPress={onPress}
+    style={[
+      styles.centerWrapper,
+      { marginTop: -40, height: 100, justifyContent: "center" }, // Lift the whole touch area
+    ]}
+  >
+    <Circle size={60} bg="$primary" elevation={5} bw={5} boc="#fbf9f6">
+      <ListPlus size={28} color="white" />
+    </Circle>
+  </Pressable>
+);
 
 const styles = StyleSheet.create({
-  tabItem: {
+  outerContainer: {
     flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-})
+  floatingBar: {
+    position: "absolute",
+    bottom: 30,
+    left: width * 0.05,
+    width: width * 0.9,
+    height: 66,
+    backgroundColor: "#ffffff",
+    borderRadius: 33,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(49, 51, 48, 0.1)",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    overflow: "visible", // CRITICAL: Allows touches outside the 66px height
+    zIndex: 10,
+  },
+  centerWrapper: {
+    width: 60,
+    alignItems: "center",
+  },
+});
