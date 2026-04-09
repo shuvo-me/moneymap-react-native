@@ -12,7 +12,7 @@ import {
 } from 'tamagui';
 // Using the Lucide icons you requested
 import { useAuthStore } from '@/store';
-import { ArrowRight, Coffee, Dumbbell, Plus, ShoppingBag, TrendingUp } from '@tamagui/lucide-icons-2';
+import { ArrowRight, Coffee, Dumbbell, ShoppingBag, TrendingUp } from '@tamagui/lucide-icons-2';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,7 +40,7 @@ export default function HearthDashboard() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore(state => state.session);
   return (
-    <ScreenContainer style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 as number }}>
+    <ScreenContainer style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20  as number }}>
       <StatusBar style="dark" />
 
       <XStack ai="flex-end" gap={'$2'} >
@@ -56,7 +56,7 @@ export default function HearthDashboard() {
         </Text>
       </XStack>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
 
         {/* Segmented Control: Consistent with Surface-Container-Low */}
         <XStack bc="$card" p="$1.5" br="$9" jc={'center'} gap="$1" bw={1} boc="$border" mt={'$6'}>
@@ -137,7 +137,7 @@ export default function HearthDashboard() {
       </ScrollView>
 
       {/* FAB: Uses primary and medium animation from config */}
-      <Button
+      {/* <Button
         position="absolute"
         bottom={40}
         alignSelf="center"
@@ -150,7 +150,7 @@ export default function HearthDashboard() {
         shadowOffset={{ width: 0, height: 8 }}
         shadowOpacity={0.3}
         icon={<Plus size={32} color="$primaryForeground" />}
-      />
+      /> */}
     </ScreenContainer>
   );
 }
