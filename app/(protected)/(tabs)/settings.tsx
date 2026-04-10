@@ -1,5 +1,8 @@
+import { signOutUser } from "@/services/auth.service";
 import { useAuthStore } from "@/store";
 import { Calendar, ChevronRight, Coins, Sun } from "@tamagui/lucide-icons-2";
+import { useMutation } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -8,6 +11,7 @@ import {
   H2,
   H3,
   ScrollView,
+  Spinner,
   styled,
   Switch,
   Text,
@@ -24,6 +28,22 @@ export const ScreenContainer = styled(YStack, {
 export default function SyncSettingsScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.session);
+  const removeSession = useAuthStore((state) => state.removeSession);
+
+  const { mutateAsync: signOut, isPending } = useMutation({
+    mutationKey: ["signOut"],
+    mutationFn: async () => {
+      await signOutUser();
+    },
+    onSuccess: () => {
+      // Optionally, you can clear the user session in your store here
+      removeSession();
+      router.replace("/sign_in");
+    },
+    onError: (error) => {
+      console.error("Error signing out:", error);
+    },
+  });
   return (
     <ScreenContainer>
       <ScrollView
@@ -135,10 +155,16 @@ export default function SyncSettingsScreen() {
               }}
               bg={"$secondaryForeground"}
               w="100%"
+              minHeight={50}
+              onPress={() => signOut()}
             >
-              <Text col={"$error"} fow="700" fos={"$3"} ls={1.1} ff={"$body"}>
-                Sign Out
-              </Text>
+              {isPending ? (
+                <Spinner color="white" />
+              ) : (
+                <Text col={"$error"} fow="700" fos={"$3"} ls={1.1} ff={"$body"}>
+                  Sign Out
+                </Text>
+              )}
             </Button>
           </XStack>
         </YStack>

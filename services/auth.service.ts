@@ -74,12 +74,12 @@ export const signInWithGoogle = async () => {
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
     if (isSuccessResponse(response)) {
-      if(!response.data?.idToken){
-       throw new Error("Google Sign-In failed: No ID Token received.");
+      if (!response.data?.idToken) {
+        throw new Error("Google Sign-In failed: No ID Token received.");
       }
       const credential = GoogleAuthProvider.credential(response.data?.idToken);
       const userCredential = await signInWithCredential(auth, credential);
-      
+
       return {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
@@ -98,4 +98,4 @@ export const signInWithGoogle = async () => {
 };
 
 // Logout
-export const logoutUser = () => signOut(auth);
+export const signOutUser = () => signOut(auth);
