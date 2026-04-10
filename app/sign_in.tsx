@@ -1,7 +1,11 @@
 import SocialLoginButtons from "@/components/SocialLoginButtons";
+import { loginUser } from "@/services/auth.service";
 import { useAuthStore } from "@/store";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Heart, LogIn } from "@tamagui/lucide-icons-2";
-import { Link } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
+import { Link, router } from "expo-router";
+import { Controller, useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
@@ -10,14 +14,50 @@ import {
   Separator,
   SizableText,
   Spacer,
+  Spinner,
   Text,
   XStack,
   YStack,
 } from "tamagui";
+import * as z from "zod";
+
+const SignInSchema = z.object({
+  email: z.string().email({ message: "*Enter a valid email address" }),
+  password: z
+    .string()
+    .min(8, { message: "*Password must be at least 8 characters" }),
+});
+
+type SignInFormData = z.infer<typeof SignInSchema>;
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const setSession = useAuthStore((state) => state.setSession);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInFormData>({
+    resolver: zodResolver(SignInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const { mutateAsync: loginUserMutation, isPending } = useMutation({
+    mutationKey: ["login"],
+    mutationFn: loginUser,
+    onSuccess: (res) => {
+      setSession(res);
+      router.replace("/");
+    },
+    onError: (error) => {
+      console.error("Error logging in user:", error);
+    },
+  });
+
+  const onSubmit = (data: SignInFormData) => loginUserMutation(data);
 
   return (
     <YStack
@@ -75,13 +115,25 @@ export default function SignInScreen() {
             >
               Email Address
             </SizableText>
-            <Input
-              h={56}
-              bg="$background"
-              bw={0}
-              br="$4"
-              placeholder="example@moneymap.com"
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  h={56}
+                  bg="$background"
+                  bw={0}
+                  br="$4"
+                  placeholder="example@moneymap.com"
+                />
+              )}
             />
+            {errors.email && (
+              <SizableText ff="$body" fow="600" fos="$2" col="$error">
+                *{errors.email.message}
+              </SizableText>
+            )}
           </YStack>
 
           {/* Password Field */}
@@ -101,14 +153,26 @@ export default function SignInScreen() {
                 Forgot?
               </SizableText>
             </XStack>
-            <Input
-              h={56}
-              bg="$background"
-              bw={0}
-              br="$4"
-              secureTextEntry
-              placeholder="••••••••"
+            <Controller
+              control={control}
+              name="password"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  h={56}
+                  bg="$background"
+                  bw={0}
+                  br="$4"
+                  secureTextEntry
+                  placeholder="••••••••"
+                />
+              )}
             />
+            {errors.password && (
+              <SizableText ff="$body" fow="600" fos="$2" col="$error">
+                *{errors.password.message}
+              </SizableText>
+            )}
           </YStack>
         </YStack>
 
@@ -119,16 +183,22 @@ export default function SignInScreen() {
           hoverStyle={{ scale: 0.98 }}
           pressStyle={{ scale: 0.96 }}
           br="$4"
-          iconAfter={<LogIn size={18} color="white" />}
+          iconAfter={!isPending ? <LogIn size={18} color="white" /> : undefined}
+          disabled={isPending}
+          onPress={handleSubmit(onSubmit)}
         >
-          <SizableText
-            ff="$heading"
-            fow="700"
-            col="$primaryForeground"
-            fos="$4"
-          >
-            Sign In
-          </SizableText>
+          {isPending ? (
+            <Spinner color={"white"} />
+          ) : (
+            <SizableText
+              ff="$heading"
+              fow="700"
+              col="$primaryForeground"
+              fos="$4"
+            >
+              Sign In
+            </SizableText>
+          )}
         </Button>
 
         {/* Decorative Divider */}

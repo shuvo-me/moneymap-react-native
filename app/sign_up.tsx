@@ -40,7 +40,7 @@ export default function SignUpScreen() {
     },
   });
 
-  const { mutateAsync: singUpUserMutation, isPending = true } = useMutation({
+  const { mutateAsync: singUpUserMutation, isPending } = useMutation({
     mutationKey: ["signUp"],
     mutationFn: singUpUser,
     onSuccess: (res) => {
