@@ -43,20 +43,23 @@ const customTokens = createTokens({
     ...defaultTokens.color,
     // Brand Palette
     primary: '#546354',
+    primaryLow: '#d6e7d4',
     primaryForeground: '#fbf9f6',
     secondary: '#8f4c42',
     secondaryForeground: '#ffffff',
-    
+    error: "#aa371c",
+
     // Surface Palette (Hearth Editorial Cream)
     background: '#fbf9f6',
     foreground: '#313330',
     muted: '#5e5f5c',
-    
+
     // Semantic Helpers
     border: '#31333015',
     card: '#f5f3f0',
+
   },
-  radius:{
+  radius: {
     ...defaultTokens.radius,
     full: 999999999
   }
@@ -81,29 +84,33 @@ const config = createTamagui({
       color: customTokens.color.foreground,
       colorMuted: customTokens.color.muted,
       primary: customTokens.color.primary,
+      primaryLow: customTokens.color.primaryLow,
       primaryForeground: customTokens.color.primaryForeground,
       secondary: customTokens.color.secondary,
       secondaryForeground: customTokens.color.secondaryForeground,
       borderColor: customTokens.color.border,
       card: customTokens.color.card,
+      error: customTokens.color.error
     },
     dark: {
       background: '#1a1c19',
       color: '#e2e3de',
       colorMuted: '#8e9289',
       primary: '#d6e7d4',
+      primaryLow: '#d6e7d4',
       primaryForeground: '#1a1c19',
       secondary: '#ffdad4',
       secondaryForeground: '#1a1c19',
       borderColor: '#31333030',
       card: '#2d2f2c',
+      error: customTokens.color.error
     },
   }
 })
 
 export type AppConfig = typeof config
 declare module 'tamagui' {
-  interface TamaguiCustomConfig extends AppConfig {}
+  interface TamaguiCustomConfig extends AppConfig { }
 }
 
 export default config
