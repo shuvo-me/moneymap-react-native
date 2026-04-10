@@ -44,6 +44,7 @@ const customTokens = createTokens({
     // Brand Palette
     primary: '#546354',
     primaryLow: '#d6e7d4',
+    primaryLowDark: '#3d4b3d',
     primaryForeground: '#fbf9f6',
     secondary: '#8f4c42',
     secondaryForeground: '#ffffff',
@@ -97,12 +98,12 @@ const config = createTamagui({
       color: '#e2e3de',
       colorMuted: '#8e9289',
       primary: '#d6e7d4',
-      primaryLow: '#d6e7d4',
+      primaryLow: customTokens.color.primaryLowDark,
       primaryForeground: '#1a1c19',
       secondary: '#ffdad4',
       secondaryForeground: '#1a1c19',
       borderColor: '#31333030',
-      card: '#2d2f2c',
+      card: '#1d1e1b',
       error: customTokens.color.error
     },
   }

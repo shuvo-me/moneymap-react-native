@@ -1,5 +1,5 @@
 import { signOutUser } from "@/services/auth.service";
-import { useAuthStore } from "@/store";
+import { useAuthStore, useThemeStore } from "@/store";
 import { Calendar, ChevronRight, Coins, Sun } from "@tamagui/lucide-icons-2";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -29,6 +29,8 @@ export default function SyncSettingsScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.session);
   const removeSession = useAuthStore((state) => state.removeSession);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const theme = useThemeStore((state) => state.theme);
 
   const { mutateAsync: signOut, isPending } = useMutation({
     mutationKey: ["signOut"],
@@ -141,8 +143,12 @@ export default function SyncSettingsScreen() {
               <PreferenceItem
                 icon={Sun}
                 label="Appearance"
-                value="Light Mode"
+                // Dynamically change label
+                value={theme === "dark" ? "Dark Mode" : "Light Mode"}
                 hasToggle
+                // Connect the switch props
+                checked={theme === "dark"}
+                onCheckedChange={toggleTheme}
               />
             </YStack>
           </YStack>
@@ -205,6 +211,7 @@ const PreferenceItem = ({
 
       {hasToggle ? (
         <Switch
+          {...props}
           id={id}
           size={"$2"}
           defaultChecked={defaultChecked}

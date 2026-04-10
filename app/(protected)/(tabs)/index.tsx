@@ -30,7 +30,7 @@ const ScreenContainer = styled(YStack, {
 });
 
 const HearthCard = styled(YStack, {
-  backgroundColor: "#d6e7d4",
+  backgroundColor: "$primaryLow",
   br: "$9", // Mapping to a large border radius token
   p: "$6",
   // shadowColor: '$border',
@@ -48,14 +48,16 @@ export default function HearthDashboard() {
     <ScreenContainer
       style={{
         paddingTop: insets.top + 20,
-        paddingBottom: (insets.bottom + 20) as number,
       }}
     >
       <AppTopBar />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: insets.bottom + 100,
+        }}
       >
         {/* Segmented Control: Consistent with Surface-Container-Low */}
         <XStack
@@ -166,22 +168,23 @@ export default function HearthDashboard() {
         </YStack>
 
         {/* Budgets Section */}
-        <YStack mt="$10" p="$6" bc="$card" br="$9" bw={1} boc="$border">
-          <Text ff="$heading" fos="$5" fow="800" mb="$6">
+        <YStack mt="$6" gap={"$3"}>
+          <Text ff="$heading" fos="$5" fow="800">
             Budgets
           </Text>
-
-          <BudgetProgress
-            label="Home & Garden"
-            progress="85%"
-            colToken="$primary"
-          />
-          <Separator my="$5" boc="$border" opacity={0.5} />
-          <BudgetProgress
-            label="Entertainment"
-            progress="42%"
-            colToken="$secondary"
-          />
+          <YStack p="$6" bc="$card" br="$9" bw={1} boc="$border">
+            <BudgetProgress
+              label="Home & Garden"
+              progress="85%"
+              colToken="$primary"
+            />
+            <Separator my="$5" boc="$border" opacity={0.5} />
+            <BudgetProgress
+              label="Entertainment"
+              progress="42%"
+              colToken="$secondary"
+            />
+          </YStack>
         </YStack>
       </ScrollView>
 
