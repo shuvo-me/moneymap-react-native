@@ -1,8 +1,7 @@
-import { signInWithGoogle } from "@/services/auth.service";
+import SocialLoginButtons from "@/components/SocialLoginButtons";
 import { useAuthStore } from "@/store";
-import { Chrome, Heart, LogIn } from "@tamagui/lucide-icons-2";
-import { useMutation } from "@tanstack/react-query";
-import { Link, router } from "expo-router";
+import { Heart, LogIn } from "@tamagui/lucide-icons-2";
+import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
@@ -11,42 +10,26 @@ import {
   Separator,
   SizableText,
   Spacer,
-  Spinner,
   Text,
   XStack,
-  YStack
+  YStack,
 } from "tamagui";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const setSession = useAuthStore((state) => state.setSession);
-  const { mutateAsync: signInWithGoogleMutation, isPending: isGoogleSignInPending } = useMutation({
-    mutationKey: ['google-sign-in'],
-    mutationFn: signInWithGoogle,
-    onSuccess: (data) => {
-      console.log('google sign in success', data);
-      setSession(data);
-      router.replace('/');
-    },
-    onError: (error) => {
-      console.log('google sign in error', error);
-    },
-  })
+
   return (
-
-
-    <YStack f={1} jc="center" bg="$background" pt={insets.top + 20} pb={insets.bottom + 20 as number}>
-
+    <YStack
+      f={1}
+      jc="center"
+      bg="$background"
+      pt={insets.top + 20}
+      pb={(insets.bottom + 20) as number}
+    >
       {/* Editorial Header Section */}
-      <YStack gap="$3" mb="$10" px={'$6'} ai={'center'}>
-        <H2
-          ff="$heading"
-          fow="800"
-          fos={48}
-          lh={52}
-          ls={-1.5}
-          col="$color"
-        >
+      <YStack gap="$3" mb="$10" px={"$6"} ai={"center"}>
+        <H2 ff="$heading" fow="800" fos={48} lh={52} ls={-1.5} col="$color">
           MoneyMap
         </H2>
         <SizableText
@@ -57,9 +40,12 @@ export default function SignInScreen() {
           lh={24}
           textAlign="center"
         >
-          Welcome back to your financial <XStack ai="center" gap={4}>
-            <Text fos={'$4'} col="$primary">Hearth</Text>
-            <Heart color="red" fill={'red'} mt={1} size={16} />
+          Welcome back to your financial{" "}
+          <XStack ai="center" gap={4}>
+            <Text fos={"$4"} col="$primary">
+              Hearth
+            </Text>
+            <Heart color="red" fill={"red"} mt={1} size={16} />
           </XStack>
         </SizableText>
       </YStack>
@@ -111,12 +97,7 @@ export default function SignInScreen() {
               >
                 Password
               </SizableText>
-              <SizableText
-                ff="$body"
-                fos="$2"
-                fow="600"
-                col="$secondary"
-              >
+              <SizableText ff="$body" fos="$2" fow="600" col="$secondary">
                 Forgot?
               </SizableText>
             </XStack>
@@ -167,44 +148,22 @@ export default function SignInScreen() {
         </XStack>
 
         {/* Social Login Options */}
-        <XStack gap="$4">
-          <Button
-            f={1}
-            h={56}
-            br="$4"
-            bw={1}
-            bc="$borderColor"
-            bg="$background"
-            icon={isGoogleSignInPending ? undefined : <Chrome size={18} />}
-            onPress={() => signInWithGoogleMutation()}
-          >
-            {isGoogleSignInPending ? <Spinner color={'$primary'} /> : <SizableText ff="$body" fow="600">Google</SizableText>}
-          </Button>
-          {/* <Button
-            f={1}
-            h={56}
-            br="$4"
-            bw={1}
-            bc="$borderColor"
-            bg="$background"
-            icon={<Apple size={18} />}
-          >
-            <SizableText ff="$body" fow="600">Apple</SizableText>
-          </Button> */}
-        </XStack>
+        <SocialLoginButtons />
       </YStack>
 
       <Spacer size="$6" />
 
       {/* Footer Link */}
       <XStack jc="center" ai="center" gap="$2">
-        <SizableText col="$colorMuted" fos="$3">New to the MoneyMap?</SizableText>
+        <SizableText col="$colorMuted" fos="$3">
+          New to the MoneyMap?
+        </SizableText>
         <Link href="/sign_up">
-          <SizableText col="$secondary" fow="700" fos="$3">Create Account</SizableText>
+          <SizableText col="$secondary" fow="700" fos="$3">
+            Create Account
+          </SizableText>
         </Link>
-
       </XStack>
-
     </YStack>
   );
 }
