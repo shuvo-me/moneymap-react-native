@@ -105,7 +105,7 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                     minWidth={70}
                     h={60}
                     br="$4"
-                    bg={selectedAmount === amt ? "$primary" : "white"}
+                    bg={selectedAmount === amt ? "$entryButttonBg" : "$card"}
                     onPress={() => setSelectedAmount(amt)}
                     pressStyle={{ scale: 0.95 }}
                     borderWidth={selectedAmount === amt ? 0 : 1}
@@ -228,7 +228,7 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
           width="100%"
           br="$6"
           h={60}
-          bg="$primary"
+          bg="$entryButttonBg"
           onPress={() => {
             // Handle submit logic
             console.log({
@@ -279,11 +279,17 @@ const CategoryButton = ({
       ai="center"
       gap="$2"
       width="100%"
-      bg={isSelected ? "$primary" : "$card"}
+      bg={isSelected ? "$entryButttonBg" : "$card"}
       p="$3"
       br="$4"
     >
-      <Circle br={9999999} size={48} bg={"white"} ai="center" jc="center">
+      <Circle
+        br={9999999}
+        size={48}
+        bg={"$secondaryForeground"}
+        ai="center"
+        jc="center"
+      >
         <Icon size={20} color={color} />
       </Circle>
       <Text

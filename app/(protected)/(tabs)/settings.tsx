@@ -73,7 +73,7 @@ export default function SyncSettingsScreen() {
 
             {/* Profile Identity Card */}
             <XStack
-              bg="white"
+              bg="$card"
               p="$6"
               br="$8"
               ai="center"
@@ -118,7 +118,7 @@ export default function SyncSettingsScreen() {
 
           {/* System Preferences Section */}
           <YStack
-            bg="white"
+            bg="$card"
             p={"$6"}
             br="$9"
             // shadowColor="$onSurface"
