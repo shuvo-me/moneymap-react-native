@@ -172,7 +172,7 @@ export default function SignUpScreen() {
         {/* Primary Sign In Button */}
         <Button
           h={64}
-          bg="$primary"
+          bg="$buttonBg"
           hoverStyle={{ scale: 0.98 }}
           pressStyle={{ scale: 0.96 }}
           br="$4"
@@ -183,12 +183,7 @@ export default function SignUpScreen() {
           {isPending ? (
             <Spinner color={"white"} />
           ) : (
-            <SizableText
-              ff="$heading"
-              fow="700"
-              col="$primaryForeground"
-              fos="$4"
-            >
+            <SizableText ff="$heading" fow="700" col="white" fos="$4">
               Sign Up
             </SizableText>
           )}

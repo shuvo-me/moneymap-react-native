@@ -179,7 +179,7 @@ export default function SignInScreen() {
         {/* Primary Sign In Button */}
         <Button
           h={64}
-          bg="$primary"
+          bg="$buttonBg"
           hoverStyle={{ scale: 0.98 }}
           pressStyle={{ scale: 0.96 }}
           br="$4"
@@ -190,12 +190,7 @@ export default function SignInScreen() {
           {isPending ? (
             <Spinner color={"white"} />
           ) : (
-            <SizableText
-              ff="$heading"
-              fow="700"
-              col="$primaryForeground"
-              fos="$4"
-            >
+            <SizableText ff="$heading" fow="700" col="white" fos="$4">
               Sign In
             </SizableText>
           )}
@@ -230,7 +225,7 @@ export default function SignInScreen() {
         </SizableText>
         <Link href="/sign_up">
           <SizableText col="$secondary" fow="700" fos="$3">
-            Create Account
+            Sign Up
           </SizableText>
         </Link>
       </XStack>

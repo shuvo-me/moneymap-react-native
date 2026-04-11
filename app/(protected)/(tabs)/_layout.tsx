@@ -84,13 +84,7 @@ const RaisedActionButton = ({
       { marginTop: -40, height: 100, justifyContent: "center" }, // Lift the whole touch area
     ]}
   >
-    <Circle
-      size={60}
-      bg="$entryButttonBg"
-      elevation={5}
-      bw={5}
-      boc="$entryButttonBg"
-    >
+    <Circle size={60} bg="$buttonBg" elevation={5} bw={5} boc="$buttonBg">
       <ListPlus size={28} color="white" />
     </Circle>
   </Pressable>
