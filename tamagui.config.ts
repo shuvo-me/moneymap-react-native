@@ -49,7 +49,7 @@ const customTokens = createTokens({
     secondary: '#8f4c42',
     secondaryForeground: '#ffffff',
     error: "#aa371c",
-
+    entryButttonBg: '#546354',
     // Surface Palette (Hearth Editorial Cream)
     background: '#fbf9f6',
     foreground: '#313330',
@@ -91,7 +91,8 @@ const config = createTamagui({
       secondaryForeground: customTokens.color.secondaryForeground,
       borderColor: customTokens.color.border,
       card: customTokens.color.card,
-      error: customTokens.color.error
+      error: customTokens.color.error,
+      entryButttonBg: customTokens.color.entryButttonBg
     },
     dark: {
       background: '#1a1c19',
@@ -104,7 +105,8 @@ const config = createTamagui({
       secondaryForeground: '#1a1c19',
       borderColor: '#31333030',
       card: '#1d1e1b',
-      error: customTokens.color.error
+      error: customTokens.color.error,
+      entryButttonBg: customTokens.color.entryButttonBg
     },
   }
 })

@@ -1,4 +1,5 @@
 import { QuickLogSheet } from "@/components/QuickLogSheet";
+import { useThemeStore } from "@/store";
 import { LayoutDashboard, ListPlus, Settings } from "@tamagui/lucide-icons-2";
 import { TabList, Tabs, TabSlot, TabTrigger } from "expo-router/ui";
 import { useState } from "react";
@@ -9,6 +10,7 @@ const { width } = Dimensions.get("window");
 
 export default function Layout() {
   const [showQuickLog, setShowQuickLog] = useState<boolean>(false);
+  const theme = useThemeStore((state) => state.theme);
   return (
     <>
       <QuickLogSheet open={showQuickLog} onOpenChange={setShowQuickLog} />
@@ -17,13 +19,24 @@ export default function Layout() {
         <TabSlot />
 
         {/* TabList is the actual Bar */}
-        <TabList style={styles.floatingBar}>
+
+        <TabList
+          style={[
+            styles.floatingBar,
+            {
+              backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
+            },
+          ]}
+        >
           <TabTrigger name="index" href="/" asChild>
             <CustomTabButton icon={LayoutDashboard} label="Dashboard" />
           </TabTrigger>
 
           {/* <TabTrigger name="quick_log" href="/quick_log" asChild> */}
-          <RaisedActionButton onPress={() => setShowQuickLog(true)} />
+          <RaisedActionButton
+            onPress={() => setShowQuickLog(true)}
+            theme={theme}
+          />
           {/* </TabTrigger> */}
 
           <TabTrigger name="settings" href="/settings" asChild>
@@ -57,7 +70,13 @@ const CustomTabButton = ({ icon: Icon, label, isFocused, ...props }: any) => {
   );
 };
 
-const RaisedActionButton = ({ onPress }: { onPress: () => void }) => (
+const RaisedActionButton = ({
+  onPress,
+  theme,
+}: {
+  onPress: () => void;
+  theme: string;
+}) => (
   <Pressable
     onPress={onPress}
     style={[
@@ -65,7 +84,13 @@ const RaisedActionButton = ({ onPress }: { onPress: () => void }) => (
       { marginTop: -40, height: 100, justifyContent: "center" }, // Lift the whole touch area
     ]}
   >
-    <Circle size={60} bg="$primary" elevation={5} bw={5} boc="#fbf9f6">
+    <Circle
+      size={60}
+      bg="$entryButttonBg"
+      elevation={5}
+      bw={5}
+      boc="$entryButttonBg"
+    >
       <ListPlus size={28} color="white" />
     </Circle>
   </Pressable>
@@ -81,7 +106,7 @@ const styles = StyleSheet.create({
     left: width * 0.05,
     width: width * 0.9,
     height: 66,
-    backgroundColor: "#ffffff",
+    // backgroundColor: "#ffffff",
     borderRadius: 33,
     flexDirection: "row",
     alignItems: "center",
