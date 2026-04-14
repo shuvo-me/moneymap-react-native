@@ -1,16 +1,15 @@
 import {
-  Button,
   Circle,
   ScrollView,
-  Separator,
   Text,
   View,
   XStack,
   YStack,
-  styled,
+  styled
 } from "tamagui";
 // Using the Lucide icons you requested
 import AppTopBar from "@/components/AppTopBar";
+import { CategoryDistribution } from "@/components/CategoryDistribution";
 import { useAuthStore } from "@/store";
 import {
   ArrowRight,
@@ -59,44 +58,10 @@ export default function HearthDashboard() {
           paddingBottom: insets.bottom + 100,
         }}
       >
-        {/* Segmented Control: Consistent with Surface-Container-Low */}
-        <XStack
-          bc="$card"
-          p="$1.5"
-          br="$9"
-          jc={"center"}
-          gap="$1"
-          bw={1}
-          boc="$border"
-          mt={"$6"}
-        >
-          <Button
-            flex={1}
-            size="$3"
-            br="$9"
-            bg="$background"
-            fow="700"
-            px="$6"
-            elevation={2}
-          >
-            <Text ff="$body" fos="$2">
-              All
-            </Text>
-          </Button>
-          <Button size="$3" br="$9" bg="transparent" px="$6">
-            <Text ff="$body" fos="$2" col="$colorMuted">
-              Personal
-            </Text>
-          </Button>
-          <Button flex={1} size="$3" br="$9" bg="transparent" px="$6">
-            <Text ff="$body" fos="$2" col="$colorMuted">
-              Family
-            </Text>
-          </Button>
-        </XStack>
+
 
         {/* Hero Spending Card: Uses Semantic primary tokens */}
-        <HearthCard mb="$10" mt={"$4"}>
+        <HearthCard mb="$5" mt={"$5"}>
           <Text
             ff="$body"
             fos="$1"
@@ -109,7 +74,7 @@ export default function HearthDashboard() {
             SPENDING • THIS WEEK
           </Text>
           <XStack ai="baseline" gap="$2">
-            <Text ff="$heading" fos="$9" fow="800" col="$primary">
+            <Text ff="$heading" fos="$8" fow="800" col="$primary">
               $1,248
             </Text>
             <Text ff="$heading" fos="$6" fow="700" col="$primary" opacity={0.6}>
@@ -130,79 +95,132 @@ export default function HearthDashboard() {
           </YStack>
         </HearthCard>
 
-        {/* Recent Activity List */}
-        <XStack jc="space-between" ai="center" mb="$5">
-          <Text ff="$heading" fos="$6" fow="800" col="$color">
-            Recent Activity
-          </Text>
-          <XStack ai="center" gap="$2">
-            <Text col="$primary" fow="700" fos="$3" ff="$body">
-              View All
+        <XStack gap="$4" mb={'$5'}>
+          {/* Monthly Budget Card */}
+          <YStack
+            f={1}
+            p="$3"
+            br="$7"
+            bg="$background" // Using your Hearth Editorial Cream
+            jc="space-between"
+            elevation={2}
+            shadowColor="$foreground"
+            shadowOpacity={0.04}
+            shadowOffset={{ width: 0, height: 4 }}
+            shadowRadius={40}
+          >
+            <YStack>
+              <Text
+                ff="$body"
+                fos={"$1"}
+                fow="700"
+                ls={1.5}
+                tt="uppercase"
+                col="$colorMuted"
+                opacity={0.6}
+              >
+                Monthly Budget
+              </Text>
+              <Text ff="$heading" fos="$6" fow="800" mt="$1" col="$color">
+                $4,000.00
+              </Text>
+            </YStack>
+
+            <YStack mt="$4" gap="$2">
+              {/* Progress Bar */}
+              <View h={6} w="100%" bg="$primaryLow" br="$full" ov="hidden">
+                <View h="100%" w="85.5%" bg="$primary" br="$full" />
+              </View>
+              <Text ff="$body" fos={10} fow="600" col="$colorMuted">
+                85.5% utilized
+              </Text>
+            </YStack>
+          </YStack>
+
+          {/* Savings Rate Card */}
+          <YStack
+            f={1}
+            p="$3"
+            br="$7"
+            bg="$background"
+            elevation={2}
+            shadowColor="$foreground"
+            shadowOpacity={0.04}
+            shadowOffset={{ width: 0, height: 4 }}
+            shadowRadius={40}
+          >
+            <YStack>
+              <Text
+                ff="$body"
+                fos={"$1"}
+                fow="700"
+                ls={1.5}
+                tt="uppercase"
+                col="$colorMuted"
+                opacity={0.6}
+              >
+                Savings Rate
+              </Text>
+              <Text ff="$heading" fos="$6" fow="800" mt="$1" col="$secondary">
+                14.5%
+              </Text>
+            </YStack>
+
+            <Text
+              ff="$body"
+              fos={10}
+              lh={16}
+              mt="$3"
+              col="$colorMuted"
+              fsi="italic"
+            >
+              "Steady growth is the path to freedom."
             </Text>
-            <ArrowRight size={16} color="$primary" />
-          </XStack>
+          </YStack>
         </XStack>
 
-        <YStack gap="$3">
-          <TransactionRow
-            title="Whole Foods"
-            category="Family"
-            amount="-$45.00"
-            Icon={ShoppingBag}
-            iconCol="$primary"
-          />
-          <TransactionRow
-            title="Iron Paradise"
-            category="Personal"
-            amount="-$15.00"
-            Icon={Dumbbell}
-            iconCol="$secondary"
-          />
-          <TransactionRow
-            title="Blue Bottle"
-            category="Personal"
-            amount="-$6.50"
-            Icon={Coffee}
-            iconCol="$tertiary"
-          />
-        </YStack>
+        <CategoryDistribution />
 
-        {/* Budgets Section */}
-        <YStack mt="$6" gap={"$3"}>
-          <Text ff="$heading" fos="$5" fow="800">
-            Budgets
-          </Text>
-          <YStack p="$6" bc="$card" br="$9" bw={1} boc="$border">
-            <BudgetProgress
-              label="Home & Garden"
-              progress="85%"
-              colToken="$primary"
+        {/* Recent Activity List */}
+        <YStack mt={'$5'} gap={'$3'}>
+          <XStack jc="space-between" ai="center" >
+            <Text ff="$heading" fos="$4" fow="800" col="$color">
+              Recent Activity
+            </Text>
+            <XStack ai="center" gap="$2">
+              <Text col="$primary" fow="700" fos="$3" ff="$body">
+                View All
+              </Text>
+              <ArrowRight size={16} color="$primary" />
+            </XStack>
+          </XStack>
+
+          <YStack gap="$3">
+            <TransactionRow
+              title="Whole Foods"
+              category="Family"
+              amount="-$45.00"
+              Icon={ShoppingBag}
+              iconCol="$primary"
             />
-            <Separator my="$5" boc="$border" opacity={0.5} />
-            <BudgetProgress
-              label="Entertainment"
-              progress="42%"
-              colToken="$secondary"
+            <TransactionRow
+              title="Iron Paradise"
+              category="Personal"
+              amount="-$15.00"
+              Icon={Dumbbell}
+              iconCol="$secondary"
+            />
+            <TransactionRow
+              title="Blue Bottle"
+              category="Personal"
+              amount="-$6.50"
+              Icon={Coffee}
+              iconCol="$tertiary"
             />
           </YStack>
         </YStack>
-      </ScrollView>
 
-      {/* FAB: Uses primary and medium animation from config */}
-      {/* <Button
-        position="absolute"
-        bottom={40}
-        alignSelf="center"
-        w={64}
-        h={64}
-        br="$6" // Based on your DEFAULT 0.25rem scaling
-        bg="$primary"
-        pressStyle={{ scale: 0.9, opacity: 0.9 }}
-        shadowColor="$primary"
-        shadowOffset={{ width: 0, height: 8 }}
-        shadowOpacity={0.3}
-        icon={<Plus size={32} color="$primaryForeground" />}
-      /> */}
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -220,7 +238,7 @@ const TransactionRow = ({ title, category, amount, Icon, iconCol }: any) => (
     animation="fast"
   >
     <XStack ai="center" gap="$4">
-      <Circle size={52} bc="$card" bw={1} boc="$border">
+      <Circle size={52} bc="$secondaryForeground" bw={1} boc="$border">
         <Icon
           size={20}
           color={iconCol.replace("$", "") === "primary" ? "#546354" : iconCol}

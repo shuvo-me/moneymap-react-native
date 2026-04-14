@@ -1,3 +1,5 @@
+import { logService } from "@/services/log.service";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BarChart3,
   CheckCircle,
@@ -10,32 +12,66 @@ import {
   ShoppingBag,
   X,
 } from "@tamagui/lucide-icons-2";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { Pressable } from "react-native";
 import {
   Button,
   Circle,
   H2,
+  Input,
   ScrollView,
   Sheet,
+  Spinner,
+  Switch,
   Text,
   TextArea,
   View,
   XStack,
   YStack,
 } from "tamagui";
+import * as z from "zod";
 
 interface QuickLogSheetProps {
   open: boolean;
   onOpenChange: (val: boolean) => void;
 }
 
+const QuickLogSchema = z.object({
+  amount: z
+    .number()
+    .int({ message: "Amount must be a whole number" })
+    .positive({ message: "Amount must be greater than zero" }),
+  category: z.string().min(1, { message: "Category is required" }),
+  type: z.string().min(1, { message: "Type is required" }),
+  note: z.string().optional(),
+});
+
+type QuickLogFormData = z.infer<typeof QuickLogSchema>;
+
 export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
   const [selectedAmount, setSelectedAmount] = useState("$20");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [isCustomAmount, setIsCustomAmount] = useState(false);
+  const {
+    setValue,
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<QuickLogFormData>({
+    resolver: zodResolver(QuickLogSchema),
+    defaultValues: {
+      amount: 0,
+      category: "",
+      type: "",
+      note: "",
+    },
+  });
 
-  const amounts = ["৳250", "৳500", "৳1000"];
+  const amounts = ["250", "500", "1000"];
 
   const personalCategories = [
     { Icon: Dumbbell, label: "Gym", id: "gym" },
@@ -50,6 +86,28 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
     { Icon: Lightbulb, label: "Kids", id: "kids" },
     { Icon: Home, label: "Home", id: "home" },
   ];
+
+  const { mutateAsync: addLogAsync, isPending } = useMutation({
+    mutationKey: ["addLog"],
+    mutationFn: async (data: QuickLogFormData) => {
+      // Call your logService to add the log
+      await logService.addLog({
+        amount: data.amount,
+        category: data.category,
+        type: data.type as "personal" | "family",
+        note: data.note || "",
+      });
+    },
+    onSuccess: () => {
+      reset();
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error("Error adding log:", error);
+    },
+  });
+
+  const onSaveLog = (data: QuickLogFormData) => addLogAsync(data);
 
   return (
     <Sheet
@@ -97,32 +155,96 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
           <YStack gap="$8">
             {/* Amount Presets */}
             <YStack gap="$3">
-              <XStack gap="$3" fw="wrap">
-                {amounts.map((amt) => (
-                  <Button
-                    key={amt}
-                    flex={1}
-                    minWidth={70}
-                    h={60}
-                    br="$4"
-                    bg={selectedAmount === amt ? "$buttonBg" : "$card"}
-                    onPress={() => setSelectedAmount(amt)}
-                    pressStyle={{ scale: 0.95 }}
-                    borderWidth={selectedAmount === amt ? 0 : 1}
-                    borderColor="$outlineVariant"
-                  >
-                    <Text
-                      ff="$heading"
-                      fow="800"
-                      fos="$4"
-                      col={selectedAmount === amt ? "white" : "$primary"}
-                      numberOfLines={1}
-                    >
-                      {amt}
-                    </Text>
-                  </Button>
-                ))}
+              <XStack ai={"center"} gap={"$2"}>
+                <Switch
+                  id={"custom-amount-toggle"}
+                  size={"$2"}
+                  backgroundColor={"$primaryLow"}
+                  transition={"fast"}
+                  onCheckedChange={(val) => setIsCustomAmount(val)}
+                >
+                  <Switch.Thumb transition={"fast"} bg={"$primary"} />
+                </Switch>
+                <Text ff={"$body"} fos={"$3"} fow="600" col="$primary" ls={1.5}>
+                  Custom Amount
+                </Text>
               </XStack>
+              {isCustomAmount ? (
+                <XStack
+                  enterStyle={{ opacity: 0, x: 10 }}
+                  bg="$card"
+                  br="$4"
+                  h={56}
+                  ai="center"
+                  px="$4"
+                  bw={1}
+                  boc="$primary"
+                >
+                  <Text ff="$heading" fos="$5" fow="800" col="$primary" mr="$2">
+                    ৳
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="amount"
+                    render={({ field: { value, onChange } }) => (
+                      <Input
+                        inputMode="numeric"
+                        keyboardType="number-pad"
+                        f={1}
+                        placeholder="0.00"
+                        bg="transparent"
+                        bw={0}
+                        autoFocus
+                        value={value ? String(value) : ""}
+                        onChangeText={(text) => {
+                          // 3. Strict Regex: Remove everything that is NOT a digit
+                          const integerOnly = text.replace(/[^0-9]/g, "");
+
+                          // 4. Update state (send empty string as undefined for Zod)
+                          onChange(
+                            integerOnly === "" ? undefined : integerOnly,
+                          );
+                        }}
+                      />
+                    )}
+                  />
+                </XStack>
+              ) : (
+                <XStack gap="$3" fw="wrap">
+                  {amounts.map((amt) => (
+                    <Button
+                      key={amt}
+                      flex={1}
+                      minWidth={70}
+                      h={60}
+                      br="$4"
+                      bg={selectedAmount === amt ? "$buttonBg" : "$card"}
+                      onPress={() => {
+                        setSelectedAmount(amt);
+                        setValue("amount", parseInt(amt));
+                      }}
+                      pressStyle={{ scale: 0.95 }}
+                      borderWidth={selectedAmount === amt ? 0 : 1}
+                      borderColor="$outlineVariant"
+                    >
+                      <Text
+                        ff="$heading"
+                        fow="800"
+                        fos="$4"
+                        col={selectedAmount === amt ? "white" : "$primary"}
+                        numberOfLines={1}
+                      >
+                        {amt}
+                      </Text>
+                    </Button>
+                  ))}
+                </XStack>
+              )}
+              {errors.amount && (
+                <Text ff="$body" fow="600" fos="$2" col="$error">
+                  *{errors.amount.message}
+                </Text>
+              )}
             </YStack>
 
             {/* Personal Category Section */}
@@ -147,10 +269,19 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                     {...cat}
                     color="$secondary"
                     isSelected={selectedCategory === cat.id}
-                    onPress={() => setSelectedCategory(cat.id)}
+                    onPress={() => {
+                      setSelectedCategory(cat.id);
+                      setValue("category", cat.id);
+                      setValue("type", "personal");
+                    }}
                   />
                 ))}
               </XStack>
+              {errors.category && (
+                <Text ff="$body" fow="600" fos="$2" col="$error">
+                  *{errors.category.message}
+                </Text>
+              )}
             </YStack>
 
             {/* Family Category Section */}
@@ -175,10 +306,19 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                     {...cat}
                     color="$primary"
                     isSelected={selectedCategory === cat.id}
-                    onPress={() => setSelectedCategory(cat.id)}
+                    onPress={() => {
+                      setSelectedCategory(cat.id);
+                      setValue("category", cat.id);
+                      setValue("type", "family");
+                    }}
                   />
                 ))}
               </XStack>
+              {errors.category && (
+                <Text ff="$body" fow="600" fos="$2" col="$error">
+                  *{errors.category.message}
+                </Text>
+              )}
             </YStack>
 
             {/* Optional Note Field */}
@@ -205,18 +345,24 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                   bg: "$card",
                 }}
               >
-                <TextArea
-                  flex={1}
-                  bg="transparent"
-                  p={0}
-                  placeholderTextColor="$muted"
-                  placeholder="What was this for?"
-                  color="$primary"
-                  value={note}
-                  onChangeText={setNote}
-                  minHeight={50}
-                  borderWidth={0}
+                <Controller
+                  control={control}
+                  name="note"
+                  render={({ field }) => (
+                    <TextArea
+                      flex={1}
+                      bg="transparent"
+                      p={0}
+                      placeholderTextColor="$muted"
+                      placeholder="What was this for?"
+                      color="$primary"
+                      minHeight={50}
+                      borderWidth={0}
+                      {...field}
+                    />
+                  )}
                 />
+
                 <FileText size={20} color="$outline" />
               </XStack>
             </YStack>
@@ -229,22 +375,20 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
           br="$6"
           h={60}
           bg="$buttonBg"
-          onPress={() => {
-            // Handle submit logic
-            console.log({
-              amount: selectedAmount,
-              category: selectedCategory,
-              note,
-            });
-            onOpenChange(false);
-          }}
+          onPress={handleSubmit(onSaveLog)}
           pressStyle={{ scale: 0.95 }}
         >
-          <XStack gap="$2" ai="center">
-            <CheckCircle size={20} color="white" />
-            <Text ff="$heading" fow="800" fos="$4" col="white">
-              Log Expense
-            </Text>
+          <XStack gap="$2" ai="center" jc={"center"}>
+            {isPending ? (
+              <Spinner color="white" />
+            ) : (
+              <>
+                <CheckCircle size={20} color="white" />
+                <Text ff="$heading" fow="800" fos="$4" col="white">
+                  Log Expense
+                </Text>
+              </>
+            )}
           </XStack>
         </Button>
       </Sheet.Frame>
