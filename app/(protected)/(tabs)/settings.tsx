@@ -5,7 +5,7 @@ import { userService } from "@/services/user.service";
 import { useAuthStore, useThemeStore } from "@/store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronRight, Coins, Sun } from "@tamagui/lucide-icons-2";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -37,7 +37,7 @@ export const ScreenContainer = styled(YStack, {
 const SettingsSchema = z.object({
   currency: z.string(),
   startOfWeek: z.number(),
-  montlyBudget: z.number(),
+  monthlyBudget: z.number(),
 });
 
 type SettingsSchemaType = z.infer<typeof SettingsSchema>;
@@ -50,25 +50,42 @@ export default function SyncSettingsScreen() {
   const theme = useThemeStore((state) => state.theme);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
-  const { handleSubmit, setValue, watch } = useForm<SettingsSchemaType>({
+  const { handleSubmit, setValue, watch, reset } = useForm<SettingsSchemaType>({
     defaultValues: {
       currency: "BDT",
       startOfWeek: 0,
-      montlyBudget: 0,
+      monthlyBudget: 0,
     },
     resolver: zodResolver(SettingsSchema),
   });
 
-  const { mutateAsync: updateSettings, isPending: isUpdatingSettings } = useMutation({
-    mutationFn: userService.updateSettings,
-    mutationKey: ['updateSettings'],
-    onSuccess: (res) => {
-      console.log('User settings updated successfully:', res)
+  const { isLoading: isFetchingSettings } = useQuery({
+    queryKey: ["userSettings", user?.uid],
+    queryFn: async () => {
+      if (!user) return null;
+      const settings = await userService.getSettings();
+      if (settings) {
+        reset({
+          currency: settings.currency || "BDT",
+          startOfWeek: settings.startOfWeek ?? 0,
+          monthlyBudget: settings.monthlyBudget ?? 0,
+        });
+      }
+      return settings;
     },
-    onError: (err) => {
-      console.error('Error updating user settings:', err)
-    }
-  })
+  });
+
+  const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
+    useMutation({
+      mutationFn: userService.updateSettings,
+      mutationKey: ["updateSettings"],
+      onSuccess: (res) => {
+        console.log("User settings updated successfully:", res);
+      },
+      onError: (err) => {
+        console.error("Error updating user settings:", err);
+      },
+    });
 
   const { mutateAsync: signOut, isPending } = useMutation({
     mutationKey: ["signOut"],
@@ -94,7 +111,7 @@ export default function SyncSettingsScreen() {
         f={1}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          pt: insets.top + 10,
+          pt: insets.top + 20,
           pb: insets.bottom + 90,
         }}
       >
@@ -103,7 +120,7 @@ export default function SyncSettingsScreen() {
           <YStack gap="$6">
             <H2
               ff="$heading"
-              fos={"$7"}
+              size={"$6"}
               fow="800"
               ls={-2}
               col="$onSurface"
@@ -158,53 +175,69 @@ export default function SyncSettingsScreen() {
           </YStack>
 
           {/* System Preferences Section */}
-          <YStack
-            bg="$card"
-            p={"$6"}
-            br="$9"
-          >
+          <YStack bg="$card" p={"$6"} br="$9">
             <H3 ff="$heading" fos={"$5"} fow="700" mb="$8">
               System Preferences
             </H3>
 
             <YStack gap="$8">
-              <PreferenceItem
-                icon={Coins}
-                label="Default Currency"
-                value={watch('currency')}
-                onPress={() => {
-                  console.log('pressed');
-                  setShowCurrencyPicker(true)
-                }}
-              />
-              <StartOfWeekPicker
-                value={watch('startOfWeek') === 0 ? 'sunday' : 'monday'}
-                onChange={(value) => setValue('startOfWeek', value === 'sunday' ? 0 : 1)}
-              />
+              {!isFetchingSettings ? (
+                <>
+                  <PreferenceItem
+                    icon={Coins}
+                    label="Default Currency"
+                    value={watch("currency")}
+                    onPress={() => {
+                      console.log("pressed");
+                      setShowCurrencyPicker(true);
+                    }}
+                  />
+                  <StartOfWeekPicker
+                    value={watch("startOfWeek") === 1 ? "monday" : "sunday"}
+                    onChange={(value) =>
+                      setValue("startOfWeek", value === "sunday" ? 0 : 1)
+                    }
+                  />
 
-              <YStack gap={'$3'}>
-                <Text ff="$body" fos={"$2"} fow="800" col="$primary" ls={1.5} tt={'uppercase'}>Monthly Budget</Text>
-                <Input
-                  value={watch('montlyBudget')}
-                  onChangeText={(value) => setValue('montlyBudget', Number(value))}
-                  placeholder="Enter your monthly budget"
-                  placeholderTextColor="$colorMuted"
-                  minHeight={55}
-                />
-              </YStack>
+                  <YStack gap={"$3"}>
+                    <Text
+                      ff="$body"
+                      fos={"$2"}
+                      fow="800"
+                      col="$primary"
+                      ls={1.5}
+                      tt={"uppercase"}
+                    >
+                      Monthly Budget
+                    </Text>
+                    <Input
+                      value={watch("monthlyBudget")?.toString() || ""}
+                      onChangeText={(value) =>
+                        setValue("monthlyBudget", Number(value))
+                      }
+                      placeholder="Enter your monthly budget"
+                      placeholderTextColor="$colorMuted"
+                      minHeight={55}
+                    />
+                  </YStack>
 
-              <Button
-                bg="$secondaryForeground"
-
-                br="$4"
-                pressStyle={{
-                  opacity: 0.5,
-                }}
-                icon={!isUpdatingSettings ? <Check color="$color" /> : undefined}
-                onPress={handleSubmit(onUpdateSettings)}
-              >
-                {isUpdatingSettings ? <Spinner color="$color" /> : 'Save'}
-              </Button>
+                  <Button
+                    bg="$secondaryForeground"
+                    br="$4"
+                    pressStyle={{
+                      opacity: 0.5,
+                    }}
+                    icon={
+                      !isUpdatingSettings ? <Check color="$color" /> : undefined
+                    }
+                    onPress={handleSubmit(onUpdateSettings)}
+                  >
+                    {isUpdatingSettings ? <Spinner color="$color" /> : "Save"}
+                  </Button>
+                </>
+              ) : (
+                <Spinner color="$color" />
+              )}
 
               <Separator borderColor="$primary" opacity={0.1} />
 
@@ -244,9 +277,9 @@ export default function SyncSettingsScreen() {
           open={showCurrencyPicker}
           onOpenChange={setShowCurrencyPicker}
           onSelect={(code) => {
-            setValue('currency', code)
+            setValue("currency", code);
           }}
-          selected={watch('currency')}
+          selected={watch("currency")}
         />
       </ScrollView>
     </ScreenContainer>
@@ -265,7 +298,7 @@ const PreferenceItem = ({
   onPress,
   ...props
 }: any) => (
-  <YStack gap="$3" f={1} >
+  <YStack gap="$3" f={1}>
     <Text ff="$body" fos={"$2"} fow="800" col="$primary" ls={1.5}>
       {label.toUpperCase()}
     </Text>

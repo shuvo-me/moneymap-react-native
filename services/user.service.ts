@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 export interface UserSettings {
   monthlyBudget: number;
   currency: string;
-  startofWeek: number
+  startOfWeek: number
 }
 
 export const userService = {
@@ -27,16 +27,16 @@ export const userService = {
       await setDoc(userRef, updateData, { merge: true });
 
       // Return the data you just saved so your UI can use it
-      return { 
-        success: true, 
-        data: updateData 
+      return {
+        success: true,
+        data: updateData
       };
     } catch (error) {
       console.error("Firestore Update Error:", error);
       throw error; // Rethrow so your mutation knows it failed
     }
   },
-  
+
   async getSettings() {
     const user = auth.currentUser;
     if (!user) return null;
