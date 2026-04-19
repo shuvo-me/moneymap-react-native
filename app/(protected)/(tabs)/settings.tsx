@@ -4,13 +4,21 @@ import { signOutUser } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore, useThemeStore } from "@/store";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronRight, Coins, Sun } from "@tamagui/lucide-icons-2";
+import {
+  Camera,
+  Check,
+  ChevronRight,
+  Coins,
+  Sun,
+} from "@tamagui/lucide-icons-2";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import * as ImagePicker from "expo-image-picker";
+import { Alert } from "react-native";
 import {
   Avatar,
   Button,
@@ -23,6 +31,7 @@ import {
   styled,
   Switch,
   Text,
+  View,
   XStack,
   YStack,
 } from "tamagui";
@@ -58,6 +67,83 @@ export default function SyncSettingsScreen() {
     },
     resolver: zodResolver(SettingsSchema),
   });
+
+  // Inside your component...
+  const { mutate: updateAvatar, isPending: isUploading } = useMutation({
+    mutationKey: ["updateAvatar"],
+    mutationFn: userService.uploadUserAvatar,
+    onSuccess: (newBase64) => {
+      // Get current session
+      const currentSession = useAuthStore.getState().session;
+
+      // Update the store with the new photoURL
+      if (currentSession) {
+        useAuthStore.getState().setSession({
+          ...currentSession,
+          photoURL: newBase64,
+        });
+      }
+
+      console.log("Store synced with new Base64 photo");
+    },
+  });
+
+  const handlePickImage = async () => {
+    // 1. Create the selection menu
+    Alert.alert("Profile Picture", "How would you like to update your photo?", [
+      {
+        text: "Take a Selfie",
+        onPress: () => openPicker("camera"),
+      },
+      {
+        text: "Choose from Gallery",
+        onPress: () => openPicker("gallery"),
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  };
+
+  const openPicker = async (mode: "camera" | "gallery") => {
+    try {
+      // 2. Request Permissions
+      const permissionResult =
+        mode === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        alert(`You've refused to allow this app to access your ${mode}!`);
+        return;
+      }
+
+      const options = {
+        allowsEditing: true,
+        aspect: [1, 1] as [number, number],
+        quality: 0.2, // Keep this low for Firestore!
+        base64: true, // MUST BE TRUE
+      };
+
+      // 3. Launch the Picker
+      const result =
+        mode === "camera"
+          ? await ImagePicker.launchCameraAsync({
+              ...options,
+              cameraType: ImagePicker.CameraType.front, // Starts with selfie cam
+            })
+          : await ImagePicker.launchImageLibraryAsync(options);
+
+      // 4. Handle Result
+      if (!result.canceled) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        updateAvatar(base64Image);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+    }
+  };
 
   const { isLoading: isFetchingSettings } = useQuery({
     queryKey: ["userSettings", user?.uid],
@@ -143,10 +229,40 @@ export default function SyncSettingsScreen() {
               bw={1}
               boc="$card"
             >
-              <Avatar circular size={80}>
-                <Avatar.Image aria-label="Cam" src={user?.photoURL as string} />
-                <Avatar.Fallback backgroundColor="$primary" />
-              </Avatar>
+              <YStack
+                position="relative"
+                alignSelf="center"
+                onPress={handlePickImage} // The function to launch image picker
+                pressStyle={{ scale: 0.97, opacity: 0.9 }}
+                cursor="pointer"
+              >
+                <Avatar circular size={80} bw={2} boc="$background">
+                  <Avatar.Image
+                    aria-label="Cam"
+                    key={user?.photoURL}
+                    src={user?.photoURL as string}
+                  />
+                  <Avatar.Fallback backgroundColor="$primary" />
+                </Avatar>
+
+                {/* Edit Icon Badge */}
+                <View
+                  position="absolute"
+                  bottom={0}
+                  right={0}
+                  bg="$primary"
+                  p="$2"
+                  br="$full"
+                  bw={3}
+                  boc="$card" // Creates a "border" gap between the icon and the avatar
+                >
+                  {isUploading ? (
+                    <Spinner size="small" color="white" />
+                  ) : (
+                    <Camera size={14} color="white" />
+                  )}
+                </View>
+              </YStack>
 
               <YStack>
                 <Text ff="$headline" fos={18} fow="700">

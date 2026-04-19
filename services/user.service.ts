@@ -37,6 +37,26 @@ export const userService = {
     }
   },
 
+  async uploadUserAvatar(base64String: string) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No user logged in");
+
+    const userRef = doc(db, "users", user.uid);
+
+    try {
+      // We save the string directly to the photoURL field
+      await setDoc(userRef, {
+        photoURL: base64String,
+        updatedAt: new Date()
+      }, { merge: true });
+
+      return base64String;
+    } catch (error) {
+      console.error("Error saving Base64 image:", error);
+      throw error;
+    }
+  },
+
   async getSettings() {
     const user = auth.currentUser;
     if (!user) return null;
