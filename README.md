@@ -1,50 +1,38 @@
-# Welcome to your Expo app 👋
+# MoneyMap
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal finance tracking mobile app for managing expenses, budgets, and savings goals.
 
-## Get started
+|                  Dashboard                   |                  Add Expense                   |                  Activity                   |                  Dark Mode                   |
+| :------------------------------------------: | :--------------------------------------------: | :-----------------------------------------: | :------------------------------------------: |
+| ![Dashboard](assets/images/Screenshot_1.png) | ![Add Expense](assets/images/Screenshot_2.png) | ![Activity](assets/images/Screenshot_3.png) | ![Dark Mode](assets/images/Screenshot_4.png) |
 
-1. Install dependencies
+## Tech Stack
 
-   ```bash
-   npm install
-   ```
+- **Mobile**: Expo SDK 54, React Native 0.81
+- **Backend**: Firebase (Auth, Firestore)
+- **UI**: Tamagui
+- **State**: Zustand
+- **Data Fetching**: TanStack Query
 
-2. Start the app
+## Features
 
-   ```bash
-   npx expo start
-   ```
+- Email & Google Sign-In
+- Expense logging (personal/family categories)
+- Weekly & monthly budget tracking
+- Spending analytics by category
+- Multi-currency support
+- Dark/Light theme
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting Started
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Architecture
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `app/` - expo-router screens
+- `services/` - Firebase wrappers
+- `store/` - Zustand state
+- `components/` - Reusable UI
