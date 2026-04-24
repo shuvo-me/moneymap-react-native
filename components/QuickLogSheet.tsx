@@ -1,7 +1,9 @@
 import { logService } from "@/services/log.service";
 import { zodResolver } from "@hookform/resolvers/zod";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   BarChart3,
+  Calendar,
   CheckCircle,
   Coffee,
   Dumbbell,
@@ -15,7 +17,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable } from "react-native";
+import { Platform, Pressable } from "react-native";
 import {
   Button,
   Circle,
@@ -46,6 +48,7 @@ const QuickLogSchema = z.object({
   category: z.string().min(1, { message: "Category is required" }),
   type: z.string().min(1, { message: "Type is required" }),
   note: z.string().optional(),
+  date: z.date(),
 });
 
 type QuickLogFormData = z.infer<typeof QuickLogSchema>;
@@ -68,8 +71,11 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
       category: "",
       type: "",
       note: "",
+      date: new Date(),
     },
   });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const dateValue = watch("date");
 
   const amounts = ["250", "500", "1000"];
 
@@ -87,10 +93,18 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
     { Icon: Home, label: "Home", id: "home" },
   ];
 
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    // Hide picker for Android immediately
+    if (Platform.OS === "android") setShowDatePicker(false);
+
+    if (selectedDate) {
+      setValue("date", selectedDate);
+    }
+  };
+
   const { mutateAsync: addLogAsync, isPending } = useMutation({
     mutationKey: ["addLog"],
     mutationFn: async (data: QuickLogFormData) => {
-      // Call your logService to add the log
       await logService.addLog({
         amount: data.amount,
         category: data.category,
@@ -99,7 +113,17 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
       });
     },
     onSuccess: () => {
-      reset();
+      reset({
+        amount: 0,
+        category: "",
+        type: "",
+        note: "",
+        date: new Date(),
+      });
+
+      setSelectedAmount("");
+      setSelectedCategory(null);
+      setIsCustomAmount(false);
       onOpenChange(false);
     },
     onError: (error) => {
@@ -157,13 +181,28 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
             <YStack gap="$3">
               <XStack ai={"center"} gap={"$2"}>
                 <Switch
-                  id={"custom-amount-toggle"}
+                  id={"amount"}
                   size={"$2"}
                   backgroundColor={"$primaryLow"}
                   transition={"fast"}
-                  onCheckedChange={(val) => setIsCustomAmount(val)}
+                  checked={isCustomAmount}
+                  onCheckedChange={(val) => {
+                    setIsCustomAmount(val);
+
+                    if (val) {
+                      setSelectedAmount("");
+                    } else {
+                      setValue("amount", 0);
+                    }
+                  }}
+                  bw={1}
+                  borderColor={"$primary"}
                 >
-                  <Switch.Thumb transition={"fast"} bg={"$primary"} />
+                  <Switch.Thumb
+                    size={"$1.5"}
+                    transition={"fast"}
+                    bg={"$primary"}
+                  />
                 </Switch>
                 <Text ff={"$body"} fos={"$3"} fow="600" col="$primary" ls={1.5}>
                   Custom Amount
@@ -197,13 +236,12 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                         autoFocus
                         value={value ? String(value) : ""}
                         onChangeText={(text) => {
-                          // 3. Strict Regex: Remove everything that is NOT a digit
-                          const integerOnly = text.replace(/[^0-9]/g, "");
+                          const cleaned = text.replace(/[^0-9]/g, "");
 
-                          // 4. Update state (send empty string as undefined for Zod)
-                          onChange(
-                            integerOnly === "" ? undefined : integerOnly,
-                          );
+                          const numericValue =
+                            cleaned === "" ? 0 : parseInt(cleaned, 10);
+
+                          onChange(numericValue);
                         }}
                       />
                     )}
@@ -318,6 +356,54 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
                 <Text ff="$body" fow="600" fos="$2" col="$error">
                   *{errors.category.message}
                 </Text>
+              )}
+            </YStack>
+
+            <YStack gap="$3">
+              <Text
+                ff="$body"
+                fos={"$3"}
+                fow="700"
+                col="$onSurfaceVariant"
+                ls={1.5}
+                tt="uppercase"
+              >
+                Expense Date
+              </Text>
+
+              <Button
+                bg="$card"
+                h={55}
+                br="$4"
+                jc="space-between"
+                ai="center"
+                onPress={() => setShowDatePicker(true)}
+                borderWidth={1}
+                borderColor="$outlineVariant"
+              >
+                <XStack ai="center" gap="$3">
+                  <Calendar size={20} color="$primary" />
+                  <Text ff="$body" fos="$3" fow="600" col="$primary">
+                    {dateValue.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </XStack>
+                <Text fos="$3" ff={"$body"} col="$muted" fow="800">
+                  CHANGE
+                </Text>
+              </Button>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dateValue}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onDateChange}
+                  maximumDate={new Date()} // Prevent logging future expenses
+                />
               )}
             </YStack>
 
