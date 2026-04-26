@@ -1,4 +1,6 @@
+import queryClient from "@/config/queryClient";
 import { logService } from "@/services/log.service";
+import { useAuthStore } from "@/store/auth_store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
@@ -54,6 +56,7 @@ const QuickLogSchema = z.object({
 type QuickLogFormData = z.infer<typeof QuickLogSchema>;
 
 export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
+  const user = useAuthStore((state) => state.session);
   const [selectedAmount, setSelectedAmount] = useState("$20");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCustomAmount, setIsCustomAmount] = useState(false);
@@ -125,6 +128,9 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
       setSelectedCategory(null);
       setIsCustomAmount(false);
       onOpenChange(false);
+      queryClient.invalidateQueries({
+        queryKey: ["logs", "month", user?.uid],
+      }); // Refresh logs after adding a new one
     },
     onError: (error) => {
       console.error("Error adding log:", error);
