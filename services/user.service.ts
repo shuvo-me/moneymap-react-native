@@ -57,14 +57,15 @@ export const userService = {
     }
   },
 
-  async getSettings() {
-    const user = auth.currentUser;
-    if (!user) return null;
+  async getSettings(userId: string) {
 
-    const userRef = doc(db, "users", user.uid);
+    if (!userId) return null;
+
+    const userRef = doc(db, "users", userId);
     const docSnap = await getDoc(userRef);
 
     if (docSnap.exists()) {
+
       return docSnap.data() as UserSettings;
     }
     return null;

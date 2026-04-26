@@ -37,6 +37,8 @@ export interface LogFilter {
 
 const COLLECTION_NAME = 'logs';
 
+
+
 // --- Service Implementation ---
 
 export const logService = {
@@ -63,13 +65,13 @@ export const logService = {
     /**
      * READ: Fetches logs with dynamic filtering
      */
-    async fetchLogs(filters: LogFilter = { categoryType: 'all', timeRange: 'all' }) {
-        const user = auth.currentUser;
-        if (!user) throw new Error("User must be authenticated");
+    async fetchLogs(filters: LogFilter = { categoryType: 'all', timeRange: 'all' }, userId: string) {
+
+        if (!userId) throw new Error("User must be authenticated");
 
         const logRef = collection(db, COLLECTION_NAME);
         const constraints: any[] = [
-            where("userId", "==", user.uid),
+            where("userId", "==", userId),
             orderBy("createdAt", "desc")
         ];
 
@@ -81,11 +83,11 @@ export const logService = {
         // 2. Filter by Time Range
         const now = new Date();
         if (filters.timeRange === 'week') {
-            constraints.push(where("createdAt", ">=", startOfWeek(now)));
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfWeek(now))));
         } else if (filters.timeRange === 'month') {
-            constraints.push(where("createdAt", ">=", startOfMonth(now)));
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfMonth(now))));
         } else if (filters.timeRange === 'year') {
-            constraints.push(where("createdAt", ">=", startOfYear(now)));
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfYear(now))));
         }
 
         const q = query(logRef, ...constraints);

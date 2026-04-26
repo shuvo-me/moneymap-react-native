@@ -1,54 +1,124 @@
+import AppTopBar from "@/components/AppTopBar";
+import { CategoryDistribution } from "@/components/CategoryDistribution";
+import { CURRENCIES } from "@/lib/constants";
+import { logService } from "@/services/log.service";
+import { userService } from "@/services/user.service";
+import { useAuthStore } from "@/store";
+import { ArrowRight, ShoppingBag, TrendingUp } from "@tamagui/lucide-icons-2";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Circle,
   ScrollView,
+  Spinner,
   Text,
   View,
   XStack,
   YStack,
-  styled
+  styled,
 } from "tamagui";
-// Using the Lucide icons you requested
-import AppTopBar from "@/components/AppTopBar";
-import { CategoryDistribution } from "@/components/CategoryDistribution";
-import { useAuthStore } from "@/store";
-import {
-  ArrowRight,
-  Coffee,
-  Dumbbell,
-  ShoppingBag,
-  TrendingUp,
-} from "@tamagui/lucide-icons-2";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// --- Styled Components (Using your Config Shorthands & Tokens) ---
+// --- Styled Components ---
 
 const ScreenContainer = styled(YStack, {
   flex: 1,
   backgroundColor: "$background",
-  px: "$4", // shorthand for paddingHorizontal from your config
+  px: "$4",
 });
 
 const HearthCard = styled(YStack, {
   backgroundColor: "$primaryLow",
-  br: "$9", // Mapping to a large border radius token
+  br: "$9",
   p: "$6",
-  // shadowColor: '$border',
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.1,
   shadowRadius: 10,
 });
 
-// --- Main Screen ---
-
 export default function HearthDashboard() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.session);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 1. Fetch Settings
+  const {
+    data: settings,
+    refetch: refetchSettings,
+    isLoading: settingsLoading,
+  } = useQuery({
+    queryKey: ["userSettings", user?.uid],
+    queryFn: () => userService.getSettings(user?.uid || ""),
+    enabled: !!user?.uid,
+  });
+
+  // 2. Fetch Logs with a "Select" transformer for performance
+  const {
+    data: logStats,
+    refetch: refetchLogs,
+    isLoading: logsLoading,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["logs", "month", user?.uid],
+    queryFn: () =>
+      logService.fetchLogs(
+        { categoryType: "all", timeRange: "month" },
+        user?.uid as string,
+      ),
+    enabled: !!user?.uid,
+    select: (logs) => {
+      const total = logs.reduce((sum, log) => sum + (log.amount || 0), 0);
+      return {
+        all: logs,
+        totalSpending: total,
+        recent: logs.slice(0, 5),
+      };
+    },
+  });
+
+  // 3. Derived State (Memoized for UI snappiness)
+  const { monthlyBudget, utilization, savingsRate, currencySymbol } =
+    useMemo(() => {
+      const budget = settings?.monthlyBudget || 0;
+      const spending = logStats?.totalSpending || 0;
+      const util = budget > 0 ? (spending / budget) * 100 : 0;
+
+      const currency = settings?.currency || "USD";
+      const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
+
+      return {
+        monthlyBudget: budget,
+        utilization: util,
+        savingsRate: Math.max(0, 100 - util),
+        currencySymbol: symbol,
+      };
+    }, [settings, logStats]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchSettings(), refetchLogs()]);
+    setRefreshing(false);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  };
+
+  // 4. Global Loading State (First load only)
+  if ((settingsLoading || logsLoading) && !isRefetching) {
+    return (
+      <ScreenContainer jc="center" ai="center">
+        <Spinner size="large" color="$primary" />
+        <Text mt="$4" ff="$body" col="$colorMuted">
+          Loading your data....
+        </Text>
+      </ScreenContainer>
+    );
+  }
+
   return (
-    <ScreenContainer
-      style={{
-        paddingTop: insets.top + 20,
-      }}
-    >
+    <ScreenContainer style={{ paddingTop: insets.top + 20 }}>
       <AppTopBar />
 
       <ScrollView
@@ -57,10 +127,15 @@ export default function HearthDashboard() {
           flexGrow: 1,
           paddingBottom: insets.bottom + 100,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#546354"
+          />
+        }
       >
-
-
-        {/* Hero Spending Card: Uses Semantic primary tokens */}
+        {/* Main Spending Card */}
         <HearthCard mb="$5" mt={"$5"}>
           <Text
             ff="$body"
@@ -71,14 +146,11 @@ export default function HearthDashboard() {
             mb="$2"
             opacity={0.7}
           >
-            SPENDING • THIS WEEK
+            SPENDING • THIS MONTH
           </Text>
           <XStack ai="baseline" gap="$2">
             <Text ff="$heading" fos="$8" fow="800" col="$primary">
-              $1,248
-            </Text>
-            <Text ff="$heading" fos="$6" fow="700" col="$primary" opacity={0.6}>
-              .60
+              {formatCurrency(logStats?.totalSpending || 0)}
             </Text>
           </XStack>
 
@@ -86,108 +158,45 @@ export default function HearthDashboard() {
             <XStack ai="center" gap="$2">
               <TrendingUp size={16} color="$primary" />
               <Text ff="$body" fos="$1" fow="700" col="$primary">
-                12% from last week
+                {utilization.toFixed(1)}% of monthly budget
               </Text>
             </XStack>
             <View h={6} w="100%" bc="$primaryForeground" br="$full">
-              <View h="100%" w="75%" bc="$primary" br="$full" />
+              <View
+                h="100%"
+                w={`${Math.min(utilization, 100)}%`}
+                bc="$primary"
+                br="$full"
+              />
             </View>
           </YStack>
         </HearthCard>
 
-        <XStack gap="$4" mb={'$5'}>
-          {/* Monthly Budget Card */}
-          <YStack
-            f={1}
-            p="$3"
-            br="$7"
-            bg="$background" // Using your Hearth Editorial Cream
-            jc="space-between"
-            elevation={2}
-            shadowColor="$foreground"
-            shadowOpacity={0.04}
-            shadowOffset={{ width: 0, height: 4 }}
-            shadowRadius={40}
-          >
-            <YStack>
-              <Text
-                ff="$body"
-                fos={"$1"}
-                fow="700"
-                ls={1.5}
-                tt="uppercase"
-                col="$colorMuted"
-                opacity={0.6}
-              >
-                Monthly Budget
-              </Text>
-              <Text ff="$heading" fos="$6" fow="800" mt="$1" col="$color">
-                $4,000.00
-              </Text>
-            </YStack>
-
-            <YStack mt="$4" gap="$2">
-              {/* Progress Bar */}
-              <View h={6} w="100%" bg="$primaryLow" br="$full" ov="hidden">
-                <View h="100%" w="85.5%" bg="$primary" br="$full" />
-              </View>
-              <Text ff="$body" fos={10} fow="600" col="$colorMuted">
-                85.5% utilized
-              </Text>
-            </YStack>
-          </YStack>
-
-          {/* Savings Rate Card */}
-          <YStack
-            f={1}
-            p="$3"
-            br="$7"
-            bg="$background"
-            elevation={2}
-            shadowColor="$foreground"
-            shadowOpacity={0.04}
-            shadowOffset={{ width: 0, height: 4 }}
-            shadowRadius={40}
-          >
-            <YStack>
-              <Text
-                ff="$body"
-                fos={"$1"}
-                fow="700"
-                ls={1.5}
-                tt="uppercase"
-                col="$colorMuted"
-                opacity={0.6}
-              >
-                Savings Rate
-              </Text>
-              <Text ff="$heading" fos="$6" fow="800" mt="$1" col="$secondary">
-                14.5%
-              </Text>
-            </YStack>
-
-            <Text
-              ff="$body"
-              fos={10}
-              lh={16}
-              mt="$3"
-              col="$colorMuted"
-              fsi="italic"
-            >
-              "Steady growth is the path to freedom."
-            </Text>
-          </YStack>
+        {/* Budget & Savings Info */}
+        <XStack gap="$4" mb={"$5"}>
+          <MetricCard
+            label="Monthly Budget"
+            value={formatCurrency(monthlyBudget)}
+            subtext={`${utilization.toFixed(1)}% utilized`}
+            progress={utilization}
+          />
+          <MetricCard
+            label="Savings Rate"
+            value={`${savingsRate.toFixed(1)}%`}
+            subtext='"Steady growth is freedom."'
+            isSavings
+          />
         </XStack>
 
-        <CategoryDistribution />
+        <CategoryDistribution logs={logStats?.all || []} />
 
-        {/* Recent Activity List */}
-        <YStack mt={'$5'} gap={'$3'}>
-          <XStack jc="space-between" ai="center" >
+        {/* Recent Activity */}
+        <YStack mt={"$5"} gap={"$3"}>
+          <XStack jc="space-between" ai="center">
             <Text ff="$heading" fos="$4" fow="800" col="$color">
               Recent Activity
             </Text>
-            <XStack ai="center" gap="$2">
+            <XStack ai="center" gap="$2" pressStyle={{ opacity: 0.7 }}>
               <Text col="$primary" fow="700" fos="$3" ff="$body">
                 View All
               </Text>
@@ -196,62 +205,121 @@ export default function HearthDashboard() {
           </XStack>
 
           <YStack gap="$3">
-            <TransactionRow
-              title="Whole Foods"
-              category="Family"
-              amount="-$45.00"
-              Icon={ShoppingBag}
-              iconCol="$primary"
-            />
-            <TransactionRow
-              title="Iron Paradise"
-              category="Personal"
-              amount="-$15.00"
-              Icon={Dumbbell}
-              iconCol="$secondary"
-            />
-            <TransactionRow
-              title="Blue Bottle"
-              category="Personal"
-              amount="-$6.50"
-              Icon={Coffee}
-              iconCol="$tertiary"
-            />
+            {logStats?.recent && logStats.recent.length > 0 ? (
+              logStats.recent.map((log: any) => (
+                <TransactionRow
+                  key={log.id}
+                  title={log.note || log.category}
+                  category={log.type}
+                  amount={`-${formatCurrency(log.amount)}`}
+                  Icon={ShoppingBag}
+                  iconCol="$primary"
+                  // Suggestion: Format the actual timestamp here if available
+                  time="Today"
+                />
+              ))
+            ) : (
+              <Text ff="$body" col="$colorMuted" fos="$3" ta="center" py="$10">
+                The Hearth is quiet. No logs found.
+              </Text>
+            )}
           </YStack>
         </YStack>
-
       </ScrollView>
     </ScreenContainer>
   );
 }
 
-// --- Internal Helper Components (Scoped to Theme Tokens) ---
+// --- Internal Helper Components ---
 
-const TransactionRow = ({ title, category, amount, Icon, iconCol }: any) => (
+const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
+  <YStack
+    f={1}
+    p="$4"
+    br="$7"
+    bg="$card"
+    jc="space-between"
+    elevation={2}
+    shadowOpacity={0.04}
+  >
+    <YStack>
+      <Text
+        ff="$body"
+        fos={"$1"}
+        fow="700"
+        ls={1.5}
+        tt="uppercase"
+        col="$colorMuted"
+        opacity={0.6}
+      >
+        {label}
+      </Text>
+      <Text
+        ff="$heading"
+        fos="$6"
+        fow="800"
+        mt="$1"
+        col={isSavings ? "$secondary" : "$color"}
+      >
+        {value}
+      </Text>
+    </YStack>
+    {progress !== undefined ? (
+      <YStack mt="$4" gap="$2">
+        <View h={6} w="100%" bg="$primaryLow" br="$full" ov="hidden">
+          <View
+            h="100%"
+            w={`${Math.min(progress, 100)}%`}
+            bg="$primary"
+            br="$full"
+          />
+        </View>
+        <Text ff="$body" fos={10} fow="600" col="$colorMuted">
+          {subtext}
+        </Text>
+      </YStack>
+    ) : (
+      <Text ff="$body" fos={10} lh={14} mt="$4" col="$colorMuted" fsi="italic">
+        {subtext}
+      </Text>
+    )}
+  </YStack>
+);
+
+const TransactionRow = ({
+  title,
+  category,
+  amount,
+  Icon,
+  iconCol,
+  time,
+}: any) => (
   <XStack
     jc="space-between"
     ai="center"
     p="$4"
     br="$4"
     bg={"$card"}
-    pressStyle={{ bg: "$card", scale: 0.99 }}
-    animation="fast"
+    pressStyle={{ scale: 0.98 }}
   >
     <XStack ai="center" gap="$4">
       <Circle size={52} bc="$secondaryForeground" bw={1} boc="$border">
-        <Icon
-          size={20}
-          color={iconCol.replace("$", "") === "primary" ? "#546354" : iconCol}
-        />
+        <Icon size={20} color={iconCol === "$primary" ? "#546354" : iconCol} />
       </Circle>
       <YStack>
-        <Text ff="$body" fow="700" fos="$4" col="$color">
+        <Text
+          ff="$body"
+          fow="700"
+          fos="$4"
+          col="$color"
+          textTransform="capitalize"
+        >
           {title}
         </Text>
         <XStack ai="center" gap="$2">
           <Circle size={6} bc={iconCol} />
           <Text ff="$body" col="$colorMuted" fos="$1" fow="600">
-            {category} • 2:30 PM
+            {category} • {time}
           </Text>
         </XStack>
       </YStack>
@@ -260,20 +328,4 @@ const TransactionRow = ({ title, category, amount, Icon, iconCol }: any) => (
       {amount}
     </Text>
   </XStack>
-);
-
-const BudgetProgress = ({ label, progress, colToken }: any) => (
-  <YStack gap="$2.5">
-    <XStack jc="space-between">
-      <Text ff="$body" fos="$1" fow="800" col="$colorMuted" ls={1.5}>
-        {label.toUpperCase()}
-      </Text>
-      <Text ff="$heading" fow="800" fos="$2">
-        {progress}
-      </Text>
-    </XStack>
-    <View h={8} w="100%" bc="$background" br="$full">
-      <View h="100%" w={progress} bc={colToken} br="$full" />
-    </View>
-  </YStack>
 );

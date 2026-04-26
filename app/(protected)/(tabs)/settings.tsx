@@ -1,5 +1,6 @@
 import { CurrencyPicker } from "@/components/CurrencyPicker";
 import { StartOfWeekPicker } from "@/components/StartOfWeekPicker";
+import queryClient from "@/config/queryClient";
 import { signOutUser } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore, useThemeStore } from "@/store";
@@ -161,15 +162,12 @@ export default function SyncSettingsScreen() {
     },
   });
 
-  const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
+const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
     useMutation({
       mutationFn: userService.updateSettings,
       mutationKey: ["updateSettings"],
-      onSuccess: (res) => {
-        console.log("User settings updated successfully:", res);
-      },
-      onError: (err) => {
-        console.error("Error updating user settings:", err);
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["userSettings"] });
       },
     });
 
