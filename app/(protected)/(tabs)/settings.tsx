@@ -14,7 +14,7 @@ import {
 } from "@tamagui/lucide-icons-2";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -146,23 +146,13 @@ export default function SyncSettingsScreen() {
     }
   };
 
-  const { isLoading: isFetchingSettings } = useQuery({
+  const { data: settings, isLoading: isFetchingSettings } = useQuery({
     queryKey: ["userSettings", user?.uid],
-    queryFn: async () => {
-      if (!user) return null;
-      const settings = await userService.getSettings();
-      if (settings) {
-        reset({
-          currency: settings.currency || "BDT",
-          startOfWeek: settings.startOfWeek ?? 0,
-          monthlyBudget: settings.monthlyBudget ?? 0,
-        });
-      }
-      return settings;
-    },
+    queryFn: () => userService.getSettings(user?.uid || ""),
+    enabled: !!user?.uid,
   });
 
-const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
+  const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
     useMutation({
       mutationFn: userService.updateSettings,
       mutationKey: ["updateSettings"],
@@ -187,6 +177,17 @@ const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
   });
 
   const onUpdateSettings = (data: SettingsSchemaType) => updateSettings(data);
+
+  useEffect(() => {
+    if (settings) {
+      console.log("Form is being populated from the Cache!");
+      reset({
+        currency: settings.currency || "BDT",
+        startOfWeek: settings.startOfWeek ?? 0,
+        monthlyBudget: settings.monthlyBudget ?? 0,
+      });
+    }
+  }, [settings]);
 
   return (
     <ScreenContainer>
@@ -325,11 +326,30 @@ const { mutateAsync: updateSettings, isPending: isUpdatingSettings } =
                       Monthly Budget
                     </Text>
                     <Input
-                      value={watch("monthlyBudget")?.toString() || ""}
-                      onChangeText={(value) =>
-                        setValue("monthlyBudget", Number(value))
+                      // Convert number to string, but show empty string if it's 0 to allow clearing
+                      value={
+                        watch("monthlyBudget") === 0
+                          ? ""
+                          : watch("monthlyBudget").toString()
                       }
-                      placeholder="Enter your monthly budget"
+                      onChangeText={(value) => {
+                        // If the input is cleared, set to 0 (or stay empty if you prefer)
+                        if (value === "") {
+                          setValue("monthlyBudget", 0);
+                        } else {
+                          // Clean non-numeric characters and parse
+                          const numericValue = parseInt(
+                            value.replace(/[^0-9]/g, ""),
+                            10,
+                          );
+                          setValue(
+                            "monthlyBudget",
+                            isNaN(numericValue) ? 0 : numericValue,
+                          );
+                        }
+                      }}
+                      placeholder="0"
+                      keyboardType="numeric"
                       placeholderTextColor="$colorMuted"
                       minHeight={55}
                     />

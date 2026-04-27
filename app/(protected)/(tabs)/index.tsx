@@ -4,7 +4,7 @@ import { CURRENCIES } from "@/lib/constants";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/store";
-import { ArrowRight, ShoppingBag, TrendingUp } from "@tamagui/lucide-icons-2";
+import { ArrowRight, Coins, ShoppingBag } from "@tamagui/lucide-icons-2";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
@@ -78,22 +78,39 @@ export default function HearthDashboard() {
   });
 
   // 3. Derived State (Memoized for UI snappiness)
-  const { monthlyBudget, utilization, savingsRate, currencySymbol } =
-    useMemo(() => {
-      const budget = settings?.monthlyBudget || 0;
-      const spending = logStats?.totalSpending || 0;
-      const util = budget > 0 ? (spending / budget) * 100 : 0;
+  const {
+    monthlyBudget,
+    utilization,
+    savingsRate,
+    currencySymbol,
+    monthlySpending,
+  } = useMemo(() => {
+    const budget = settings?.monthlyBudget || 0;
+    const spending = logStats?.totalSpending || 0;
+    const util = budget > 0 ? (spending / budget) * 100 : 0;
 
-      const currency = settings?.currency || "USD";
-      const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
+    const currency = settings?.currency || "USD";
+    const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
 
-      return {
-        monthlyBudget: budget,
-        utilization: util,
-        savingsRate: Math.max(0, 100 - util),
-        currencySymbol: symbol,
-      };
-    }, [settings, logStats]);
+    return {
+      monthlyBudget: budget,
+      utilization: util,
+      savingsRate: Math.max(0, 100 - util),
+      currencySymbol: symbol,
+      monthlySpending: spending,
+    };
+  }, [settings, logStats]);
+
+  const daysInMonth = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    0,
+  ).getDate();
+  const today = new Date().getDate();
+  const daysLeft = daysInMonth - today;
+  const remainingBudget = Math.max(0, monthlyBudget - monthlySpending);
+  const dailyAllowance =
+    daysLeft > 0 ? remainingBudget / daysLeft : remainingBudget;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -154,21 +171,18 @@ export default function HearthDashboard() {
             </Text>
           </XStack>
 
-          <YStack mt="$4" gap="$2">
+          <YStack mt="$2" gap="$1">
             <XStack ai="center" gap="$2">
-              <TrendingUp size={16} color="$primary" />
-              <Text ff="$body" fos="$1" fow="700" col="$primary">
-                {utilization.toFixed(1)}% of monthly budget
+              <View p="$1.5" br="$full" bg="$primaryForeground">
+                <Coins size={14} color="$primary" />
+              </View>
+              <Text ff="$body" fos="$2" fow="600" col="$primary">
+                {formatCurrency(dailyAllowance)} / day left
               </Text>
             </XStack>
-            <View h={6} w="100%" bc="$primaryForeground" br="$full">
-              <View
-                h="100%"
-                w={`${Math.min(utilization, 100)}%`}
-                bc="$primary"
-                br="$full"
-              />
-            </View>
+            <Text ff="$body" fos="$1" col="$primary" opacity={0.6} ml="$7">
+              To stay within your {formatCurrency(monthlyBudget)} budget
+            </Text>
           </YStack>
         </HearthCard>
 

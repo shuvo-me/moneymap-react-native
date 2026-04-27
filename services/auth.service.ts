@@ -1,4 +1,4 @@
-import { SignUpSchemaType } from "@/app/sign_up";
+import { SignUpSchemaType } from "@/app/(auth)/sign_up";
 import { auth } from "@/config/firebase";
 import {
   GoogleSignin,
