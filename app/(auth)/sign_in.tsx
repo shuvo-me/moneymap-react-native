@@ -83,7 +83,7 @@ export default function SignInScreen() {
           Welcome back to your financial{" "}
           <XStack ai="center" gap={4}>
             <Text fos={"$4"} col="$primary">
-              Hearth
+              Map
             </Text>
             <Heart color="red" fill={"red"} mt={1} size={16} />
           </XStack>

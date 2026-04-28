@@ -90,7 +90,7 @@ export const signInWithGoogle = async () => {
       return {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
-        displayName: userCredential.user.displayName,
+        displayName: user?.name || userCredential.user.displayName,
         photoURL: userCredential.user.photoURL,
         emailVerified: userCredential.user.emailVerified,
         createdAt: userCredential.user.metadata.creationTime,

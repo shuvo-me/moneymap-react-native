@@ -2,21 +2,35 @@ import { useAuthStore } from "@/store";
 import { Redirect, Stack, useSegments } from "expo-router";
 
 const ProdectedLayout = () => {
-  const session = useAuthStore((state) => state.session); // Replace with your authentication logic
+  const session = useAuthStore((state) => state.session);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
+  const hasSeenWelcome = useAuthStore((state) => state.hasSeenWelcome);
   const isInAuthGroup = useSegments()[0] === "(auth)";
   const isAtOnboardingPage = useSegments()[0] === "onboarding";
   const isAtWelcomePage = useSegments()[0] === "welcome";
-  const isOnboardingComplete = session?.onboardingComplete || false; // Example flag, replace with your actual logic
+  const isOnboardingComplete = session?.onboardingComplete || false;
+
+  if (!_hasHydrated) {
+    return null;
+  }
 
   if (!session) {
-    if (!isAtWelcomePage && !isInAuthGroup) {
+    if (!hasSeenWelcome && !isAtWelcomePage) {
       return <Redirect href="/welcome" />;
     }
-  } else if (session) {
-    if (!isOnboardingComplete) {
+
+    if (hasSeenWelcome && !isInAuthGroup && !isAtWelcomePage) {
+      return <Redirect href={"/sign_in"} />;
+    }
+  } else {
+    if (!isOnboardingComplete && !isAtOnboardingPage) {
       return <Redirect href="/onboarding" />;
     }
-    if (isAtWelcomePage || isInAuthGroup || isAtOnboardingPage) {
+
+    if (
+      isOnboardingComplete &&
+      (isAtWelcomePage || isInAuthGroup || isAtOnboardingPage)
+    ) {
       return <Redirect href="/(protected)/(tabs)" />;
     }
   }

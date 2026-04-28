@@ -17,6 +17,9 @@ interface AuthStoreState {
   session: User | null;
   setSession: (session: User) => void;
   removeSession: () => void;
+  _hasHydrated?: boolean;
+  hasSeenWelcome: boolean;
+  completeWelcome: () => void;
 }
 
 export const useAuthStore = create<AuthStoreState>()(
@@ -25,11 +28,19 @@ export const useAuthStore = create<AuthStoreState>()(
       session: null,
       setSession: (session) => set({ session }),
       removeSession: () => set({ session: null }),
+      _hasHydrated: false,
+      hasSeenWelcome: false,
+      completeWelcome: () => set({ hasSeenWelcome: true }),
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({ session: state.session }),
+      partialize: (state) => ({ session: state.session, hasSeenWelcome: state.hasSeenWelcome }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hasHydrated = true;
+        }
+      }
     }
   )
 );

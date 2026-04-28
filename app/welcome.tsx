@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/auth_store";
 import { ShieldCheck, Wallet, Zap } from "@tamagui/lucide-icons-2";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
@@ -63,6 +64,7 @@ const DATA = [
 ];
 
 export default function WelcomeScreen() {
+  const completeWelcome = useAuthStore((state) => state.completeWelcome);
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -71,7 +73,6 @@ export default function WelcomeScreen() {
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollOffset = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollOffset / SCREEN_WIDTH);
-    console.log("Scroll Offset:", scrollOffset, "Calculated Index:", index); // Debugging log
     setActiveIndex(index);
   };
 
@@ -141,7 +142,10 @@ export default function WelcomeScreen() {
           bg="$primary"
           br="$4"
           // This must point to your Registration screen
-          onPress={() => router.push("/sign_up")}
+          onPress={() => {
+            completeWelcome();
+            router.push("/sign_up");
+          }}
           pressStyle={{ opacity: 0.8, scale: 0.98 }}
         >
           <Text col="white" fow="700" fos="$4">
@@ -154,7 +158,10 @@ export default function WelcomeScreen() {
           variant="outlined"
           borderWidth={0}
           // This must point to your Login screen
-          onPress={() => router.push("/sign_in")}
+          onPress={() => {
+            completeWelcome();
+            router.push("/sign_in");
+          }}
         >
           <Text col="$colorMuted" fow="600">
             Already have an account? Log In

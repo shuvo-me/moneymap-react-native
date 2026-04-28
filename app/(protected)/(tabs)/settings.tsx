@@ -264,7 +264,7 @@ export default function SyncSettingsScreen() {
               </YStack>
 
               <YStack>
-                <Text ff="$headline" fos={18} fow="700">
+                <Text ff="$body" fos={18} fow="700">
                   {user?.displayName ?? "User Name"}
                 </Text>
                 <Text col="$onSurfaceVariant" fos={14}>
