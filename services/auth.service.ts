@@ -12,6 +12,7 @@ import {
   signOut,
   updateProfile
 } from "firebase/auth";
+import { userService } from "./user.service";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -84,6 +85,8 @@ export const signInWithGoogle = async () => {
       const credential = GoogleAuthProvider.credential(response.data?.idToken);
       const userCredential = await signInWithCredential(auth, credential);
 
+      const user = await userService.getSettings(userCredential.user.uid);
+
       return {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
@@ -91,6 +94,7 @@ export const signInWithGoogle = async () => {
         photoURL: userCredential.user.photoURL,
         emailVerified: userCredential.user.emailVerified,
         createdAt: userCredential.user.metadata.creationTime,
+        onboardingComplete: user?.onboardingCompleted || false,
       };
     } else {
       // sign in was cancelled by user

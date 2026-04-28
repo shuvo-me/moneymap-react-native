@@ -14,7 +14,6 @@ const SocialLoginButtons = () => {
     mutationKey: ["google-sign-in"],
     mutationFn: signInWithGoogle,
     onSuccess: (data) => {
-      console.log("google sign in success", data);
       setSession(data);
       router.replace("/");
     },

@@ -4,7 +4,10 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 export interface UserSettings {
   monthlyBudget: number;
   currency: string;
-  startOfWeek: number
+  startOfWeek: number;
+  name?: string;
+  photoURL?: string;
+  onboardingCompleted?: boolean;
 }
 
 export const userService = {
