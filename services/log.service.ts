@@ -46,10 +46,11 @@ export const logService = {
      * CREATE: Adds a new expense log
      */
     async addLog(data: {
+        title: string;
+        note?: string;
         amount: number;
         category: string;
-        type: LogType;
-        note: string
+        date: Date;
     }) {
         const user = auth.currentUser;
         if (!user) throw new Error("User must be authenticated");

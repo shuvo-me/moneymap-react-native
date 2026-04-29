@@ -11,7 +11,8 @@ export interface User {
   photoURL: string | null;
   emailVerified: boolean;
   createdAt: string | undefined;
-  onboardingComplete?: boolean; // Add this field to track onboarding status
+  onboardingComplete?: boolean; 
+  currency?: string; 
 }
 interface AuthStoreState {
   session: User | null;

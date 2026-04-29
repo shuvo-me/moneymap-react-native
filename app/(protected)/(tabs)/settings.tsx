@@ -131,9 +131,9 @@ export default function SyncSettingsScreen() {
       const result =
         mode === "camera"
           ? await ImagePicker.launchCameraAsync({
-              ...options,
-              cameraType: ImagePicker.CameraType.front, // Starts with selfie cam
-            })
+            ...options,
+            cameraType: ImagePicker.CameraType.front, // Starts with selfie cam
+          })
           : await ImagePicker.launchImageLibraryAsync(options);
 
       // 4. Handle Result
@@ -156,8 +156,15 @@ export default function SyncSettingsScreen() {
     useMutation({
       mutationFn: userService.updateSettings,
       mutationKey: ["updateSettings"],
-      onSuccess: () => {
+      onSuccess: (res) => {
         queryClient.invalidateQueries({ queryKey: ["userSettings"] });
+        const currentSession = useAuthStore.getState().session;
+        if (currentSession) {
+          useAuthStore.getState().setSession({
+            ...currentSession,
+            currency: res.data?.currency,
+          });
+        }
       },
     });
 
