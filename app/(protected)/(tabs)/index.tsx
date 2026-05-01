@@ -1,11 +1,12 @@
 import AppTopBar from "@/components/AppTopBar";
 import { CategoryDistribution } from "@/components/CategoryDistribution";
-import { CURRENCIES } from "@/lib/constants";
+import { ALL_CATEGORIES, CURRENCIES } from "@/lib/constants";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/store";
 import { ArrowRight, Coins, ShoppingBag } from "@tamagui/lucide-icons-2";
 import { useQuery } from "@tanstack/react-query";
+import { format, isToday } from "date-fns";
 import { useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,8 +20,6 @@ import {
   YStack,
   styled,
 } from "tamagui";
-
-// --- Styled Components ---
 
 const ScreenContainer = styled(YStack, {
   flex: 1,
@@ -42,7 +41,6 @@ export default function HearthDashboard() {
   const user = useAuthStore((state) => state.session);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 1. Fetch Settings
   const {
     data: settings,
     refetch: refetchSettings,
@@ -53,7 +51,6 @@ export default function HearthDashboard() {
     enabled: !!user?.uid,
   });
 
-  // 2. Fetch Logs with a "Select" transformer for performance
   const {
     data: logStats,
     refetch: refetchLogs,
@@ -77,7 +74,6 @@ export default function HearthDashboard() {
     },
   });
 
-  // 3. Derived State (Memoized for UI snappiness)
   const {
     monthlyBudget,
     utilization,
@@ -122,7 +118,6 @@ export default function HearthDashboard() {
     return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   };
 
-  // 4. Global Loading State (First load only)
   if ((settingsLoading || logsLoading) && !isRefetching) {
     return (
       <ScreenContainer jc="center" ai="center">
@@ -132,6 +127,23 @@ export default function HearthDashboard() {
         </Text>
       </ScreenContainer>
     );
+  }
+
+  const getIconForCategory = (category: string) => {
+    const icon = ALL_CATEGORIES.find((c) => c.id === category)?.icon;
+    if (icon) {
+      return icon;
+    }
+    return ShoppingBag;
+  }
+
+  const formatLogDate = (timeStamp: any) => {
+    const date = timeStamp.toDate ? timeStamp.toDate() : new Date(timeStamp);
+    if (isToday(date)) {
+      return "Today";
+    }
+
+    return format(date, 'dd mm yyyy');
   }
 
   return (
@@ -223,18 +235,17 @@ export default function HearthDashboard() {
               logStats.recent.map((log: any) => (
                 <TransactionRow
                   key={log.id}
-                  title={log.note || log.category}
-                  category={log.type}
+                  title={log.title || ''}
+                  category={log.category}
                   amount={`-${formatCurrency(log.amount)}`}
-                  Icon={ShoppingBag}
+                  Icon={getIconForCategory(log.category)}
                   iconCol="$primary"
-                  // Suggestion: Format the actual timestamp here if available
-                  time="Today"
+                  time={formatLogDate(log.date)}
                 />
               ))
             ) : (
               <Text ff="$body" col="$colorMuted" fos="$3" ta="center" py="$10">
-                The Hearth is quiet. No logs found.
+                MoneyMap is quiet. No logs found. Start by logging your first expense.
               </Text>
             )}
           </YStack>
@@ -300,6 +311,8 @@ const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
   </YStack>
 );
 
+
+
 const TransactionRow = ({
   title,
   category,
@@ -311,7 +324,7 @@ const TransactionRow = ({
   <XStack
     jc="space-between"
     ai="center"
-    p="$4"
+    p="$3"
     br="$4"
     bg={"$card"}
     pressStyle={{ scale: 0.98 }}
@@ -331,9 +344,8 @@ const TransactionRow = ({
           {title}
         </Text>
         <XStack ai="center" gap="$2">
-          <Circle size={6} bc={iconCol} />
-          <Text ff="$body" col="$colorMuted" fos="$1" fow="600">
-            {category} • {time}
+          <Text ff="$body" col="$colorMuted" fos="$1" fow="600" >
+            • {category?.split("-")[0].charAt(0).toUpperCase() + category?.split("-")[0].slice(1)} • {time}
           </Text>
         </XStack>
       </YStack>

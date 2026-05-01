@@ -14,18 +14,15 @@ export const CURRENCIES = [
     { code: 'EUR', name: 'Euro', symbol: '€' },
     { code: 'GBP', name: 'British Pound', symbol: '£' },
     { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-    // ... add more
 ]
 
 export const ALL_CATEGORIES = [
-    // PERSONAL GROUP
-    { id: "gym", label: "Gym", icon: Dumbbell, group: "personal", color: "$secondary" },
-    { id: "wellness", label: "Wellness", icon: Pill, group: "personal", color: "$secondary" },
-    { id: "giving", label: "Giving", icon: HeartPulse, group: "personal", color: "$secondary" },
-    { id: "bills", label: "Bills", icon: Zap, group: "personal", color: "$secondary" },
-    // FAMILY GROUP
-    { id: "family", label: "Family", icon: Users, group: "family", color: "$primary" },
-    { id: "wife", label: "Wife", icon: HeartPulse, group: "family", color: "$primary" },
-    { id: "food", label: "Food", icon: Coffee, group: "family", color: "$primary" },
-    { id: "shopping", label: "Shopping", icon: ShoppingBag, group: "family", color: "$primary" },
+  { id: "gym", label: "Gym", icon: Dumbbell, group: "personal", chartColor: "#546354" },
+  { id: "wellness", label: "Wellness", icon: Pill, group: "personal", chartColor: "#8f4c42" },
+  { id: "giving", label: "Giving", icon: HeartPulse, group: "personal", chartColor: "#a68a56" },
+  { id: "bills", label: "Bills", icon: Zap, group: "personal", chartColor: "#5b7a8c" },
+  { id: "family", label: "Family", icon: Users, group: "family", chartColor: "#7d6a8f" },
+  { id: "wife", label: "Wife", icon: HeartPulse, group: "family", chartColor: "#aa371c" },
+  { id: "food", label: "Food", icon: Coffee, group: "family", chartColor: "#d99152" },
+  { id: "shopping", label: "Shopping", icon: ShoppingBag, group: "family", chartColor: "#6a8f82" },
 ];
