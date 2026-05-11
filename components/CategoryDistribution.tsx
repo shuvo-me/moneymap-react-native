@@ -93,8 +93,9 @@ export const CategoryDistribution = ({ logs = [] }: CategoryDistributionProps) =
           </Svg>
 
           <YStack pos="absolute" ai="center" jc="center">
-            <Text ff="$body" fos="$1" fow="800" col="$color">
-              {new Date().toLocaleString('default', { month: 'short' }).toUpperCase()}
+            <Text ff={'$body'} fos={'$2'} fow={'$5'} col={'$color'}>Top</Text>
+            <Text ff="$body" fos="$3" fow="800" col="$color">
+              {topCategories[0]?.label || '-'}
             </Text>
           </YStack>
         </View>
