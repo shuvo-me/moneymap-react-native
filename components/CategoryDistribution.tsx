@@ -5,9 +5,10 @@ import { Text, useTheme, View, XStack, YStack } from 'tamagui';
 
 interface CategoryDistributionProps {
   logs?: ExpenseLog[];
+  monthlyBudget?: number;
 }
 
-export const CategoryDistribution = ({ logs = [] }: CategoryDistributionProps) => {
+export const CategoryDistribution = ({ logs = [], monthlyBudget }: CategoryDistributionProps) => {
   const circumference = 301.59;
   const tamaguiTheme = useTheme();
 
@@ -16,14 +17,14 @@ export const CategoryDistribution = ({ logs = [] }: CategoryDistributionProps) =
     return acc;
   }, {} as Record<string, number>);
 
-  const totalSpending = Object.values(categoryTotals).reduce((sum, amt) => sum + amt, 0);
+
 
   const actualCategories = Object.entries(categoryTotals).map(([id, amount]) => {
     const metadata = ALL_CATEGORIES.find(c => c.id === id);
     return {
       id,
       label: metadata?.label || id.charAt(0).toUpperCase() + id.slice(1),
-      percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0,
+      percentage: monthlyBudget! > 0 ? (amount / monthlyBudget!) * 100 : 0,
       amount,
       themeColor: metadata?.chartColor,
       hexColor: metadata?.chartColor,
@@ -106,7 +107,7 @@ export const CategoryDistribution = ({ logs = [] }: CategoryDistributionProps) =
               <LegendItem
                 key={cat.id}
                 label={cat.label}
-                percentage={`${cat.percentage.toFixed(0)}%`}
+                percentage={`${cat.percentage.toFixed(1)}%`}
                 color={cat.themeColor}
               />
             ))
