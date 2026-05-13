@@ -1,5 +1,6 @@
 import AppTopBar from "@/components/AppTopBar";
 import { CategoryDistribution } from "@/components/CategoryDistribution";
+import TransactionRow from "@/components/TransactionRow";
 import { ALL_CATEGORIES, CURRENCIES } from "@/lib/constants";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
@@ -12,14 +13,13 @@ import { useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Circle,
   ScrollView,
   Spinner,
   Text,
   View,
   XStack,
   YStack,
-  styled,
+  styled
 } from "tamagui";
 
 const ScreenContainer = styled(YStack, {
@@ -313,45 +313,4 @@ const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
 
 
 
-const TransactionRow = ({
-  title,
-  category,
-  amount,
-  Icon,
-  iconCol,
-  time,
-}: any) => (
-  <XStack
-    jc="space-between"
-    ai="center"
-    p="$3"
-    br="$4"
-    bg={"$secondaryForeground"}
-    pressStyle={{ scale: 0.98 }}
-  >
-    <XStack ai="center" gap="$4">
-      <Circle size={52} bc="$card" bw={1} boc="$border">
-        <Icon size={20} color={iconCol === "$primary" ? "#546354" : iconCol} />
-      </Circle>
-      <YStack>
-        <Text
-          ff="$body"
-          fow="700"
-          fos="$4"
-          col="$color"
-          textTransform="capitalize"
-        >
-          {title}
-        </Text>
-        <XStack ai="center" gap="$2">
-          <Text ff="$body" col="$colorMuted" fos="$1" fow="600" >
-            • {category?.split("-")[0].charAt(0).toUpperCase() + category?.split("-")[0].slice(1)} • {time}
-          </Text>
-        </XStack>
-      </YStack>
-    </XStack>
-    <Text ff="$heading" fow="800" fos="$4" col="$color">
-      {amount}
-    </Text>
-  </XStack>
-);
+
