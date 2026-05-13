@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store";
 import { ArrowRight, Coins, ShoppingBag } from "@tamagui/lucide-icons-2";
 import { useQuery } from "@tanstack/react-query";
 import { format, isToday } from "date-fns";
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -214,7 +215,7 @@ export default function HearthDashboard() {
           />
         </XStack>
 
-        <CategoryDistribution logs={logStats?.all || []} />
+        <CategoryDistribution logs={logStats?.all || []} monthlyBudget={monthlyBudget} />
 
         {/* Recent Activity */}
         <YStack mt={"$5"} gap={"$3"}>
@@ -222,7 +223,7 @@ export default function HearthDashboard() {
             <Text ff="$heading" fos="$4" fow="800" col="$color">
               Recent Activity
             </Text>
-            <XStack ai="center" gap="$2" pressStyle={{ opacity: 0.7 }}>
+            <XStack ai="center" gap="$2" pressStyle={{ opacity: 0.7 }} onPress={() => router.push('/history')}>
               <Text col="$primary" fow="700" fos="$3" ff="$body">
                 View All
               </Text>
@@ -262,10 +263,9 @@ const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
     f={1}
     p="$4"
     br="$7"
-    bg="$card"
+    bg="$secondaryForeground"
     jc="space-between"
-    elevation={2}
-    shadowOpacity={0.04}
+
   >
     <YStack>
       <Text
@@ -326,11 +326,11 @@ const TransactionRow = ({
     ai="center"
     p="$3"
     br="$4"
-    bg={"$card"}
+    bg={"$secondaryForeground"}
     pressStyle={{ scale: 0.98 }}
   >
     <XStack ai="center" gap="$4">
-      <Circle size={52} bc="$secondaryForeground" bw={1} boc="$border">
+      <Circle size={52} bc="$card" bw={1} boc="$border">
         <Icon size={20} color={iconCol === "$primary" ? "#546354" : iconCol} />
       </Circle>
       <YStack>

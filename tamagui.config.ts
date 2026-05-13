@@ -102,7 +102,7 @@ const config = createTamagui({
       primaryLow: customTokens.color.primaryLowDark,
       primaryForeground: '#1a1c19',
       secondary: '#ffdad4',
-      secondaryForeground: '#1a1c19',
+      secondaryForeground: '#1d1e1b',
       borderColor: '#31333030',
       card: '#1d1e1b',
       error: customTokens.color.error,
