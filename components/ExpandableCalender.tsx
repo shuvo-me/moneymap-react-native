@@ -114,7 +114,6 @@ const ExpandableCalender: React.FC<CustomCalendarProps> = ({
             borderColor="$borderColor"
             padding="$3"
             gap="$2"
-            elevation={1}
         >
             {/* BRAND HEADER LINE (Month, Year & Pagination Controls) */}
             <XStack ai="center" jc="space-between" paddingHorizontal="$2" paddingVertical="$1">
@@ -223,7 +222,7 @@ const ExpandableCalender: React.FC<CustomCalendarProps> = ({
                     >
                         <YStack jc="center" ai="center" gap={'$1'}>
                             <XStack h={5} w={50} borderRadius={50} bg={'$borderColor'} />
-                            <Button.Text col={'$primaryForground'} opacity={0.5} ff={'$body'} fos={'$1'} fow={'600'}>Expand Month</Button.Text>
+                            <Button.Text col={'$primaryForground'} opacity={0.5} ff={'$body'} fos={'$1'} fow={'600'}>{isExpanded ? 'Collapse' : 'Expand'} Month</Button.Text>
                         </YStack>
                     </Button>
 
