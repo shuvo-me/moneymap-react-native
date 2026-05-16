@@ -1,99 +1,175 @@
-import { ArrowLeft, Download } from '@tamagui/lucide-icons-2';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { useMemo, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-    Button,
-    Spinner,
-    Text,
-    useTheme,
-    XStack,
-    YStack
-} from 'tamagui';
-
-import { logService } from '@/services/log.service';
+import ExpandableCalender from '@/components/ExpandableCalender';
+import queryClient from '@/config/queryClient';
 import { useAuthStore } from '@/store';
-import { router } from 'expo-router';
+import { ArrowLeft, Download, DownloadCloud, Gamepad2, ShoppingBasket } from '@tamagui/lucide-icons-2';
+import { addDays, eachDayOfInterval, format, subDays } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { Dimensions, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, Circle, Text, useTheme, View, XStack, YStack } from 'tamagui';
 
-export default function HistoryScreen() {
-    const insets = useSafeAreaInsets();
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+export default function HistoryAnalysisScreen() {
+    const inset = useSafeAreaInsets();
     const theme = useTheme();
-    const queryClient = useQueryClient();
     const user = useAuthStore((state) => state.session);
 
-    // --- UI States ---
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'personal' | 'family'
-    const [selectedLog, setSelectedLog] = useState<any>(null);
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const userSettings = queryClient.getQueryData<any>(['userSettings', user?.uid]);
+    const firstDayOfWeek = userSettings?.startOfWeek || 0;
 
-    // --- 1. Data Fetching ---
-    const { data: rawLogs = [], isLoading, refetch } = useQuery({
-        queryKey: ['logs', 'all', user?.uid],
-        queryFn: () => logService.fetchLogs({ categoryType: 'all', timeRange: 'all' }, user?.uid!),
-        enabled: !!user?.uid,
-    });
+    console.log({ userSettings })
+    const chartData = useMemo(() => {
+        const current = new Date(selectedDate);
 
-    // --- 2. Mutations (Delete) ---
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => logService.deleteLog(id),
-        onSuccess: () => {
-            // Tells React Query to refetch the list so the deleted item disappears
-            queryClient.invalidateQueries({ queryKey: ['logs'] });
-            setIsDetailOpen(false);
-        },
-    });
-
-    // --- 3. Data Transformation (Memoized) ---
-    const sections = useMemo(() => {
-        const filtered = rawLogs.filter((log: any) => {
-            const note = (log.note || log.title || '').toLowerCase();
-            const matchesSearch = note.includes(searchQuery.toLowerCase());
-            const matchesFilter = activeFilter === 'all' || log.type === activeFilter;
-            return matchesSearch && matchesFilter;
+        const days = eachDayOfInterval({
+            start: subDays(current, 3),
+            end: addDays(current, 3),
         });
 
-        const groups = filtered.reduce((acc: any, log: any) => {
-            const date = log.date?.toDate ? log.date.toDate() : new Date(log.date);
-            const dateKey = format(date, 'yyyy-MM-dd');
-            if (!acc[dateKey]) acc[dateKey] = { title: date, data: [] };
-            acc[dateKey].data.push(log);
-            return acc;
-        }, {});
+        return days.map((day) => ({
+            date: format(day, 'yyyy-MM-dd'),
+            value: Math.floor(Math.random() * 5000),
+        }));
+    }, [selectedDate]);
 
-        return Object.values(groups).sort((a: any, b: any) => b.title - a.title);
-    }, [rawLogs, searchQuery, activeFilter]);
-
-    if (isLoading) {
-        return (
-            <YStack f={1} jc="center" ai="center" bg="$background">
-                <Spinner size="large" color="$primary" />
-            </YStack>
-        );
-    }
+    const peakValue = Math.max(...chartData.map((d) => d.value));
 
     return (
-        <YStack f={1} bg="$background" style={{ paddingTop: insets.top + 15 }}>
-            {/* Header  */}
-            <YStack px="$4" pb="$3" gap="$3" borderBottomWidth={1} boc="$border">
-                <XStack jc="space-between" ai="center">
-                    <XStack gap={10} ai={'center'} onPress={() => router.back()}>
-                        <ArrowLeft size={20} color={theme.primary.get()} />
-                        <Text ff="$heading" fos="$5" fow="800">History</Text>
-                    </XStack>
-
-                    <Button pressStyle={{
-                        opacity: 0.5
-                    }} chromeless iconAfter={() => <Download color="white" size={16} />} display='flex' fd={'row'} ai={'center'} gap={'$2'} bg={'$primary'} unstyled px={'$4'} py={'$1.5'} >
-                        <Button.Text col={'white'} >
-                            Export
-                        </Button.Text>
-                    </Button>
+        <YStack f={1} bg="$background" pt={inset.top + 20}>
+            {/* --- Header --- */}
+            <XStack ai="center" gap="$3" jc={'space-between'} px={'$4'}>
+                <XStack ai={'center'} gap={2}>
+                    <ArrowLeft size={20} color={theme.primary.get()} />
+                    <Text ff="$heading" fos="$6" fow="800" col="$primary">History</Text>
                 </XStack>
-            </YStack>
+                <Button
+                    iconAfter={DownloadCloud}
+                    size="$3"
+                    bg="$primaryLow"
+                    pressStyle={{ scale: 0.95 }}
+                >Export</Button>
+
+            </XStack>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}>
+
+                {/* --- 2.  Calendar --- */}
+                <YStack px="$4">
+                    <ExpandableCalender
+                        selectedDate={selectedDate}
+                        onDateChanged={setSelectedDate}
+                        firstDayOfWeek={1} />
+                </YStack>
 
 
+
+                {/* --- 3. Spending Trends & Manual Bar Chart --- */}
+                <YStack px="$6" mb="$8">
+                    <YStack mb="$6">
+                        <Text tt="uppercase" fos={10} fow="800" ls={1.5} col="$on-surface-variant">Spending Trends</Text>
+                        <XStack ai="baseline" gap="$2">
+                            <Text ff="$body" fos="$6" fow="800" col="$on-surface">$3,428.50</Text>
+                            <Text col="$secondary" fos="$3" fow="700">+12% vs last month</Text>
+                        </XStack>
+                    </YStack>
+
+                    {/* The Swapped Manual Bar Chart */}
+                    <XStack h={180} ai="flex-end" jc="space-between" gap={2} px="$2">
+                        {chartData.map((item, index) => {
+                            const isPeak = item.value === peakValue;
+                            const isSelected = item.date === selectedDate;
+                            const barHeight = (item.value / peakValue) * 100;
+
+                            return (
+                                <YStack key={index} f={1} ai="center" pos="relative">
+                                    {isPeak && (
+                                        <View
+                                            pos="absolute"
+                                            top={-30}
+                                            bg="$primary"
+                                            px="$2"
+                                            py="$1"
+                                            br="$2"
+                                            zi={10}
+                                        >
+                                            <Text col="$surface" fos={8} fow="900">PEAK</Text>
+                                        </View>
+                                    )}
+                                    <View
+                                        w="100%"
+                                        h={`${barHeight}%`}
+                                        br="$2"
+                                        bg={isSelected ? '$primary' : isPeak ? '$primary' : '$primaryLow'}
+                                        o={isSelected || isPeak ? 1 : 0.4}
+                                    />
+                                </YStack>
+                            );
+                        })}
+                    </XStack>
+                </YStack>
+
+                {/* --- 4. Filters --- */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 12, marginBottom: 32 }}>
+                    <Button br="$full" icon={<Download size={14} color="white" />} bg="$primary" >
+                        Last 30 Days
+                    </Button>
+                    <Button br="$full" bg="$surface-container-high"  >Category</Button>
+                    <Button br="$full" bg="$surface-container-high"  >Family Ledger</Button>
+                </ScrollView>
+
+                {/* --- 5. Transaction List --- */}
+                <YStack px="$6" gap="$4">
+                    <Text tt="uppercase" fos={10} fow="800" ls={2} col="$on-surface-variant">Today, Oct 24</Text>
+
+                    <TransactionCard
+                        title="Whole Foods Market"
+                        category="Groceries"
+                        amount="-142.30"
+                        tag="Family"
+                        status="Pending"
+                        icon={ShoppingBasket}
+                    />
+
+                    <TransactionCard
+                        title="Steam Games"
+                        category="Hobbies"
+                        amount="-59.99"
+                        tag="Personal"
+                        status="Flagged"
+                        icon={Gamepad2}
+                    />
+                </YStack>
+            </ScrollView>
         </YStack>
     );
 }
+
+// --- Card Component ---
+const TransactionCard = ({ title, category, amount, tag, status, icon: Icon }: any) => (
+    <XStack jc="space-between" ai="center" p="$4" bg="$surface-container-lowest" br="$6" bw={1} boc="$outline-variant" o={0.1} shadowColor="$black" shadowOpacity={0.02} shadowRadius={10}>
+        <XStack ai="center" gap="$4">
+            <Circle size={48} bg="$surface-container" bw={1} boc="$outline-variant">
+                <Icon size={20} color="#546354" />
+            </Circle>
+            <YStack>
+                <Text fow="800" fos="$4" col="$on-surface">{title}</Text>
+                <XStack ai="center" gap="$2" mt="$1">
+                    <View bg="$primary-container" px="$1.5" py="$0.5" br="$2">
+                        <Text fos={9} fow="900" col="$on-primary-container" tt="uppercase">{tag}</Text>
+                    </View>
+                    <Text fos={10} fow="600" col="$on-surface-variant" tt="uppercase" ls={0.5}>{category}</Text>
+                </XStack>
+            </YStack>
+        </XStack>
+        <YStack ai="flex-end" gap="$1">
+            <Text fow="800" fos="$4" col="$on-surface">${amount}</Text>
+            {status === 'Pending' && (
+                <View bg="$tertiary-container" px="$2" py="$0.5" br="$full">
+                    <Text fos={9} fow="800" col="$on-tertiary-container">PENDING</Text>
+                </View>
+            )}
+        </YStack>
+    </XStack>
+);
