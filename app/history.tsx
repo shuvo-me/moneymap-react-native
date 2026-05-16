@@ -60,13 +60,13 @@ export default function HistoryAnalysisScreen() {
                     <ExpandableCalender
                         selectedDate={selectedDate}
                         onDateChanged={setSelectedDate}
-                        firstDayOfWeek={1} />
+                        firstDayOfWeek={firstDayOfWeek} />
                 </YStack>
 
 
 
                 {/* --- 3. Spending Trends & Manual Bar Chart --- */}
-                <YStack px="$6" mb="$8">
+                <YStack px="$6" mb="$8" mt={'$6'}>
                     <YStack mb="$6">
                         <Text tt="uppercase" fos={10} fow="800" ls={1.5} col="$on-surface-variant">Spending Trends</Text>
                         <XStack ai="baseline" gap="$2">
@@ -76,38 +76,40 @@ export default function HistoryAnalysisScreen() {
                     </YStack>
 
                     {/* The Swapped Manual Bar Chart */}
-                    <XStack h={180} ai="flex-end" jc="space-between" gap={2} px="$2">
-                        {chartData.map((item, index) => {
-                            const isPeak = item.value === peakValue;
-                            const isSelected = item.date === selectedDate;
-                            const barHeight = (item.value / peakValue) * 100;
+                    <YStack bg={'$secondaryForeground'} padding={'$4'} borderRadius={'$4'}>
+                        <XStack h={180} ai="flex-end" jc="space-between" gap={'$2'} px="$2" >
+                            {chartData.map((item, index) => {
+                                const isPeak = item.value === peakValue;
+                                const isSelected = item.date === selectedDate;
+                                const barHeight = (item.value / peakValue) * 100;
 
-                            return (
-                                <YStack key={index} f={1} ai="center" pos="relative">
-                                    {isPeak && (
+                                return (
+                                    <YStack key={index} f={1} ai="center" pos="relative">
+                                        {isPeak && (
+                                            <View
+                                                pos="absolute"
+                                                top={-30}
+                                                bg="$primary"
+                                                px="$2"
+                                                py="$1"
+                                                br="$2"
+                                                zi={10}
+                                            >
+                                                <Text col="$secondaryForeground" fos={8} fow="900">PEAK</Text>
+                                            </View>
+                                        )}
                                         <View
-                                            pos="absolute"
-                                            top={-30}
-                                            bg="$primary"
-                                            px="$2"
-                                            py="$1"
+                                            w="100%"
+                                            h={`${barHeight}%`}
                                             br="$2"
-                                            zi={10}
-                                        >
-                                            <Text col="$surface" fos={8} fow="900">PEAK</Text>
-                                        </View>
-                                    )}
-                                    <View
-                                        w="100%"
-                                        h={`${barHeight}%`}
-                                        br="$2"
-                                        bg={isSelected ? '$primary' : isPeak ? '$primary' : '$primaryLow'}
-                                        o={isSelected || isPeak ? 1 : 0.4}
-                                    />
-                                </YStack>
-                            );
-                        })}
-                    </XStack>
+                                            bg={isSelected ? '$primary' : isPeak ? '$primary' : '$primaryLow'}
+                                            o={isSelected || isPeak ? 1 : 0.4}
+                                        />
+                                    </YStack>
+                                );
+                            })}
+                        </XStack>
+                    </YStack>
                 </YStack>
 
                 {/* --- 4. Filters --- */}
