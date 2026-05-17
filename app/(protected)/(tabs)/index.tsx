@@ -1,13 +1,13 @@
 import AppTopBar from "@/components/AppTopBar";
 import { CategoryDistribution } from "@/components/CategoryDistribution";
 import TransactionRow from "@/components/TransactionRow";
-import { ALL_CATEGORIES, CURRENCIES } from "@/lib/constants";
+import { CURRENCIES } from "@/lib/constants";
+import { formatCurrency, formatLogDate, getIconForCategory } from "@/lib/utils";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/store";
-import { ArrowRight, Coins, ShoppingBag } from "@tamagui/lucide-icons-2";
+import { ArrowRight, Coins } from "@tamagui/lucide-icons-2";
 import { useQuery } from "@tanstack/react-query";
-import { format, isToday } from "date-fns";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
@@ -115,9 +115,7 @@ export default function HearthDashboard() {
     setRefreshing(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-  };
+
 
   if ((settingsLoading || logsLoading) && !isRefetching) {
     return (
@@ -130,22 +128,7 @@ export default function HearthDashboard() {
     );
   }
 
-  const getIconForCategory = (category: string) => {
-    const icon = ALL_CATEGORIES.find((c) => c.id === category)?.icon;
-    if (icon) {
-      return icon;
-    }
-    return ShoppingBag;
-  }
 
-  const formatLogDate = (timeStamp: any) => {
-    const date = timeStamp.toDate ? timeStamp.toDate() : new Date(timeStamp);
-    if (isToday(date)) {
-      return "Today";
-    }
-
-    return format(date, 'dd mm yyyy');
-  }
 
   return (
     <ScreenContainer style={{ paddingTop: insets.top + 20 }}>
@@ -180,7 +163,7 @@ export default function HearthDashboard() {
           </Text>
           <XStack ai="baseline" gap="$2">
             <Text ff="$heading" fos="$8" fow="800" col="$primary">
-              {formatCurrency(logStats?.totalSpending || 0)}
+              {formatCurrency(logStats?.totalSpending || 0, currencySymbol)}
             </Text>
           </XStack>
 
@@ -190,11 +173,11 @@ export default function HearthDashboard() {
                 <Coins size={14} color="$primary" />
               </View>
               <Text ff="$body" fos="$2" fow="600" col="$primary">
-                {formatCurrency(dailyAllowance)} / day left
+                {formatCurrency(dailyAllowance, currencySymbol)} / day left
               </Text>
             </XStack>
             <Text ff="$body" fos="$1" col="$primary" opacity={0.6} ml="$7">
-              To stay within your {formatCurrency(monthlyBudget)} budget
+              To stay within your {formatCurrency(monthlyBudget, currencySymbol)} budget
             </Text>
           </YStack>
         </HearthCard>
@@ -203,7 +186,7 @@ export default function HearthDashboard() {
         <XStack gap="$4" mb={"$5"}>
           <MetricCard
             label="Monthly Budget"
-            value={formatCurrency(monthlyBudget)}
+            value={formatCurrency(monthlyBudget, currencySymbol)}
             subtext={`${utilization.toFixed(1)}% utilized`}
             progress={utilization}
           />
@@ -238,7 +221,7 @@ export default function HearthDashboard() {
                   key={log.id}
                   title={log.title || ''}
                   category={log.category}
-                  amount={`-${formatCurrency(log.amount)}`}
+                  amount={`-${formatCurrency(log.amount, currencySymbol)}`}
                   Icon={getIconForCategory(log.category)}
                   iconCol="$primary"
                   time={formatLogDate(log.date)}

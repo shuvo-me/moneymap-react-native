@@ -1,13 +1,23 @@
+import React from "react";
 import { Circle, Text, XStack, YStack } from "tamagui";
 
-const TransactionRow = ({
+type TransactionRowProps = {
+    title: string;
+    category: string;
+    amount: string;
+    Icon: any;
+    iconCol: string;
+    time: string;
+}
+
+const TransactionRow: React.FC<TransactionRowProps> = ({
     title,
     category,
     amount,
     Icon,
     iconCol,
     time,
-}: any) => (
+}) => (
     <XStack
         jc="space-between"
         ai="center"
