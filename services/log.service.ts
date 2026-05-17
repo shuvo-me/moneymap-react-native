@@ -26,6 +26,8 @@ export interface ExpenseLog {
     type: LogType;    // 'personal' or 'family'
     note: string;
     createdAt: Timestamp;
+    title: string;
+    date: Timestamp;
 }
 
 export type TimeRange = 'week' | 'month' | 'year' | 'all';

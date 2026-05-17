@@ -22,3 +22,15 @@ export const formatCurrency = (amount: number, currencySymbol: string = "$") => 
 
     return format(date, 'dd mm yyyy');
   }
+
+  export const getPastelAlphaColor = (hex: string, alpha: number = 0.12): string => {
+  // Clean the string if it includes the hash symbol
+  const cleanHex = hex.replace('#', '');
+  
+  // Parse out the individual RGB decimal channels
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
