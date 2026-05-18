@@ -1,5 +1,5 @@
 import { auth, db } from '@/config/firebase';
-import { startOfMonth, startOfWeek, startOfYear } from 'date-fns';
+import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import {
     addDoc,
     collection,
@@ -30,11 +30,12 @@ export interface ExpenseLog {
     date: Timestamp;
 }
 
-export type TimeRange = 'week' | 'month' | 'year' | 'all';
+export type TimeRange = 'day' | 'week' | 'month' | 'year' | 'all' | 'none';
 
 export interface LogFilter {
-    categoryType: LogType | 'all';
+    categoryType: string;
     timeRange: TimeRange;
+    selectedDate?: string;
 }
 
 const COLLECTION_NAME = 'logs';
@@ -65,42 +66,41 @@ export const logService = {
         });
     },
 
-    /**
-     * READ: Fetches logs with dynamic filtering
-     */
-    async fetchLogs(filters: LogFilter = { categoryType: 'all', timeRange: 'all' }, userId: string) {
+    async fetchLogs(
+    filters: LogFilter = { categoryType: 'all', timeRange: 'none' },
+    userId: string,
+    anchorDateString?: string
+): Promise<ExpenseLog[]> {
+    if (!userId) throw new Error("User must be authenticated");
 
-        if (!userId) throw new Error("User must be authenticated");
+    const logRef = collection(db, COLLECTION_NAME);
 
-        const logRef = collection(db, COLLECTION_NAME);
-        const constraints: any[] = [
-            where("userId", "==", userId),
-            orderBy("createdAt", "desc")
-        ];
+    const constraints: any[] = [
+        where("userId", "==", userId),
+    ];
 
-        // 1. Filter by Category Type (Personal vs Family)
-        if (filters.categoryType !== 'all') {
-            constraints.push(where("type", "==", filters.categoryType));
-        }
+    if (filters.categoryType !== 'all') {
+        constraints.push(where("category", "==", filters.categoryType));
+    }
 
-        // 2. Filter by Time Range
-        const now = new Date();
-        if (filters.timeRange === 'week') {
-            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfWeek(now))));
-        } else if (filters.timeRange === 'month') {
-            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfMonth(now))));
-        } else if (filters.timeRange === 'year') {
-            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfYear(now))));
-        }
+    // 2. FILTER BY DATE RANGE (range filters after equality)
+    if (filters.timeRange === 'day' && anchorDateString) {
+        const anchorDate = parseISO(anchorDateString);
+        constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
+        constraints.push(where("createdAt", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
+    }
 
-        const q = query(logRef, ...constraints);
-        const querySnapshot = await getDocs(q);
+    constraints.push(orderBy("createdAt", "desc"));
 
-        return querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as ExpenseLog[];
-    },
+    const q = query(logRef, ...constraints);
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as ExpenseLog[];
+    
+},
 
     /**
      * UPDATE: Edit an existing log

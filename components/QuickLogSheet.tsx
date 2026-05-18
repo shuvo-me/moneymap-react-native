@@ -86,7 +86,7 @@ export const QuickLogSheet = ({ open, onOpenChange }: QuickLogSheetProps) => {
       setIsCustomAmount(false);
       setValue('amount', 0);
       onOpenChange(false);
-      queryClient.invalidateQueries({ queryKey: ["logs", "month", user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ["logs", user?.uid] });
     },
   });
 

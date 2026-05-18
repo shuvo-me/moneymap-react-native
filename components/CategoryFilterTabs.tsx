@@ -31,7 +31,9 @@ const CategoryFilterTabs: React.FC<CategoryFilterTabsProps> = ({
                         <Button
                             key={category.id}
                             unstyled
-                            onPress={() => onCategoryChange(category.id)}
+                            onPress={() => onCategoryChange(
+                                selectedCategoryId === category.id ? 'all' : category.id
+                            )}
 
                             flexDirection="row"
                             alignItems="center"

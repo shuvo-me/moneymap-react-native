@@ -5,12 +5,12 @@ import queryClient from '@/config/queryClient';
 import { formatCurrency, formatLogDate, getIconForCategory } from '@/lib/utils';
 import { ExpenseLog, logService } from '@/services/log.service';
 import { useAuthStore } from '@/store';
-import { ArrowLeft, DownloadCloud } from '@tamagui/lucide-icons-2';
+import { ArrowLeft, DownloadCloud, RefreshCcw } from '@tamagui/lucide-icons-2';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Spinner, Text, useTheme, XStack, YStack } from 'tamagui';
 
@@ -29,12 +29,14 @@ export default function HistoryAnalysisScreen() {
         refetch: refetchLogs,
         isLoading: logsLoading,
         isRefetching,
+        error
     } = useQuery({
-        queryKey: ["logs", "month", user?.uid],
+        queryKey: ["logs", user?.uid, selectedDate, selectedCategory],
         queryFn: () =>
             logService.fetchLogs(
-                { categoryType: "all", timeRange: "month" },
+                { categoryType: selectedCategory, timeRange: 'day' },
                 user?.uid as string,
+                selectedDate
             ),
         enabled: !!user?.uid,
         select: (logs) => {
@@ -43,7 +45,7 @@ export default function HistoryAnalysisScreen() {
                 all: logs,
                 totalSpending: total
             };
-        },
+        }
     });
 
     return (
@@ -63,7 +65,12 @@ export default function HistoryAnalysisScreen() {
 
             </XStack>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }} refreshControl={
+                <RefreshControl
+                    refreshing={isRefetching}
+                    onRefresh={refetchLogs}
+                />
+            }>
 
                 {/* --- 2.  Calendar --- */}
                 <YStack px="$4">
@@ -73,11 +80,6 @@ export default function HistoryAnalysisScreen() {
                         firstDayOfWeek={firstDayOfWeek} />
                 </YStack>
 
-
-
-
-
-
                 {/* --- 5. Transaction List --- */}
                 <YStack px="$4" gap="$4" mt={'$4'}>
                     <CategoryFilterTabs
@@ -86,7 +88,16 @@ export default function HistoryAnalysisScreen() {
                     />
 
 
-                    {logStats?.all?.length === 0 ? (
+                    {error ? (
+                        <YStack h={200} jc="center" ai="center">
+                            <Text col="$error" fos={14}>
+                                Unable to load transactions. Please try again.
+                            </Text>
+                            <Button mt="$3" onPress={() => refetchLogs()} variant='outlined' borderColor={theme.primary.get()} iconAfter={<RefreshCcw />} >
+                                Retry
+                            </Button>
+                        </YStack>
+                    ) : logStats?.all?.length === 0 ? (
                         <YStack h={200} jc="center" ai="center">
                             <Text ff="$body" col="$on-surface-variant" fos={14}>
                                 No logs found!

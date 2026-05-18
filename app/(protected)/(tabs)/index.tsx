@@ -58,7 +58,7 @@ export default function HearthDashboard() {
     isLoading: logsLoading,
     isRefetching,
   } = useQuery({
-    queryKey: ["logs", "month", user?.uid],
+    queryKey: ["logs", user?.uid],
     queryFn: () =>
       logService.fetchLogs(
         { categoryType: "all", timeRange: "month" },
