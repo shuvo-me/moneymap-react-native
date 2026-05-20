@@ -1,12 +1,13 @@
 import CategoryFilterTabs from '@/components/CategoryFilterTabs';
 import ExpandableCalender from '@/components/ExpandableCalender';
+import { QuickLogSheet } from '@/components/QuickLogSheet';
 import TransactionRow from '@/components/TransactionRow';
 import queryClient from '@/config/queryClient';
 import { formatCurrency, formatLogDate, getIconForCategory } from '@/lib/utils';
 import { ExpenseLog, logService } from '@/services/log.service';
 import { useAuthStore } from '@/store';
-import { ArrowLeft, DownloadCloud, RefreshCcw } from '@tamagui/lucide-icons-2';
-import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, DownloadCloud, RefreshCcw, Inbox } from '@tamagui/lucide-icons-2';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -23,6 +24,7 @@ export default function HistoryAnalysisScreen() {
     const firstDayOfWeek = userSettings?.startOfWeek || 0;
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [exporting, setExporting] = useState(false);
+    const [editLogId, setEditLogId] = useState<string | null>(null);
 
     const {
         data: logStats,
@@ -47,6 +49,20 @@ export default function HistoryAnalysisScreen() {
             };
         }
     });
+
+    const { mutate: deleteLog, isPending: deletePending, variables: deletingId } = useMutation({
+        mutationKey: ["deleteLogs", user?.uid],
+        mutationFn: (logId: string) => logService.deleteLog(logId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ["logs", user?.uid, selectedDate, selectedCategory]
+            });
+        },
+        onError: (error) => {
+            console.error("Delete Error:", error);
+            Alert.alert("Error", "Failed to delete transaction.");
+        }
+    })
 
     // Export handler
     const handleExport = async () => {
@@ -120,9 +136,20 @@ export default function HistoryAnalysisScreen() {
                             </Button>
                         </YStack>
                     ) : logStats?.all?.length === 0 ? (
-                        <YStack h={200} jc="center" ai="center">
-                            <Text ff="$body" col="$on-surface-variant" fos={14}>
-                                No logs found!
+                        <YStack
+                            jc="center"
+                            ai="center"
+                            gap="$2"
+                            py="$8"
+                            px="$4"
+                            bg="$secondaryForeground"
+                            br="$7"
+                            bw={1}
+                            boc="$border"
+                        >
+                            <Inbox size={32} color="$colorMuted" opacity={0.6} mb="$1" />
+                            <Text ff="$body" col="$colorMuted" fos="$2" fow="500" ta="center">
+                                No transactions recorded for this period.
                             </Text>
                         </YStack>
                     ) : (isRefetching || logsLoading) ? (
@@ -138,8 +165,10 @@ export default function HistoryAnalysisScreen() {
                                     category={log.category}
                                     amount={`-${formatCurrency(log.amount, user?.currency || '$')}`}
                                     Icon={getIconForCategory(log.category)}
-                                    iconCol="$primary"
                                     time={formatLogDate(log.date)}
+                                    loading={deletePending && deletingId === log.id}
+                                    onDelete={() => { deleteLog(log.id); }}
+                                    onPress={() => setEditLogId(log.id)}
                                 />
                             ))}
                         </YStack>
@@ -148,6 +177,15 @@ export default function HistoryAnalysisScreen() {
 
                 </YStack>
             </ScrollView>
+
+            <QuickLogSheet
+                open={!!editLogId}
+                onOpenChange={(val) => {
+                    if (!val) setEditLogId(null);
+                }}
+                editMode={true}
+                logId={editLogId}
+            />
         </YStack>
     );
 }

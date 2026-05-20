@@ -1,19 +1,20 @@
 import AppTopBar from "@/components/AppTopBar";
 import { CategoryDistribution } from "@/components/CategoryDistribution";
+import { QuickLogSheet } from "@/components/QuickLogSheet";
 import TransactionRow from "@/components/TransactionRow";
 import { CURRENCIES } from "@/lib/constants";
 import { formatCurrency, formatLogDate, getIconForCategory } from "@/lib/utils";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/store";
-import { ArrowRight, Coins } from "@tamagui/lucide-icons-2";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Coins, Inbox } from "@tamagui/lucide-icons-2";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { RefreshControl } from "react-native";
+import { Alert, RefreshControl } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  ScrollView,
   Spinner,
   Text,
   View,
@@ -41,6 +42,7 @@ export default function HearthDashboard() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.session);
   const [refreshing, setRefreshing] = useState(false);
+  const [editLogId, setEditLogId] = useState<string | null>(null);
 
   const {
     data: settings,
@@ -74,6 +76,18 @@ export default function HearthDashboard() {
       };
     },
   });
+
+  const { mutate: deleteLog, isPending: deletePending, variables: deletingId } = useMutation({
+    mutationKey: ["deleteLogs", user?.uid],
+    mutationFn: (logId: string) => logService.deleteLog(logId),
+    onSuccess: async () => {
+      await refetchLogs();
+    },
+    onError: (error) => {
+      console.error("Delete Error:", error);
+      Alert.alert("Error", "Failed to delete transaction.");
+    }
+  })
 
   const {
     monthlyBudget,
@@ -114,8 +128,6 @@ export default function HearthDashboard() {
     await Promise.all([refetchSettings(), refetchLogs()]);
     setRefreshing(false);
   };
-
-
 
   if ((settingsLoading || logsLoading) && !isRefetching) {
     return (
@@ -223,18 +235,42 @@ export default function HearthDashboard() {
                   category={log.category}
                   amount={`-${formatCurrency(log.amount, currencySymbol)}`}
                   Icon={getIconForCategory(log.category)}
-                  iconCol="$primary"
                   time={formatLogDate(log.date)}
+                  loading={deletePending && deletingId === log.id}
+                  onDelete={() => { console.log('delete', log.id); deleteLog(log.id); }}
+                  onPress={() => setEditLogId(log.id)}
                 />
               ))
             ) : (
-              <Text ff="$body" col="$colorMuted" fos="$3" ta="center" py="$10">
-                MoneyMap is quiet. No logs found. Start by logging your first expense.
-              </Text>
+              <YStack
+                jc="center"
+                ai="center"
+                gap="$2"
+                py="$6"
+                px="$4"
+                bg="$secondaryForeground"
+                br="$7"
+                bw={1}
+                boc="$border"
+              >
+                <Inbox size={32} color="$colorMuted" opacity={0.6} mb="$1" />
+                <Text ff="$body" col="$colorMuted" fos="$2" fow="500" ta="center">
+                  No transactions recorded yet. Log your first expense to begin tracking.
+                </Text>
+              </YStack>
             )}
           </YStack>
         </YStack>
       </ScrollView>
+
+      <QuickLogSheet
+        open={!!editLogId}
+        onOpenChange={(val) => {
+          if (!val) setEditLogId(null);
+        }}
+        editMode={true}
+        logId={editLogId}
+      />
     </ScreenContainer>
   );
 }

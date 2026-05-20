@@ -7,6 +7,7 @@ import {
     collection,
     deleteDoc,
     doc,
+    getDoc,
     getDocs,
     orderBy,
     query,
@@ -66,6 +67,19 @@ export const logService = {
             userId: user.uid,
             createdAt: serverTimestamp(),
         });
+    },
+
+    /**
+     * READ: Get a single log by ID
+     */
+    async getLog(logId: string): Promise<ExpenseLog> {
+        const user = auth.currentUser;
+        if (!user) throw new Error("User must be authenticated");
+
+        const logRef = doc(db, COLLECTION_NAME, logId);
+        const logDoc = await getDoc(logRef);
+        if (!logDoc.exists()) throw new Error("Log not found");
+        return { id: logDoc.id, ...logDoc.data() } as ExpenseLog;
     },
 
     async fetchLogs(

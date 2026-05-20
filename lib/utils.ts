@@ -6,27 +6,27 @@ export const formatCurrency = (amount: number, currencySymbol: string = "$") => 
   return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 };
 
-  export const getIconForCategory = (category: string) => {
-    const icon = ALL_CATEGORIES.find((c) => c.id === category)?.icon;
-    if (icon) {
-      return icon;
-    }
-    return ShoppingBag;
+export const getIconForCategory = (category: string) => {
+  const icon = ALL_CATEGORIES.find((c) => c.id === category)?.icon;
+  if (icon) {
+    return icon;
+  }
+  return ShoppingBag;
+}
+
+export const formatLogDate = (timeStamp: any) => {
+  const date = timeStamp.toDate ? timeStamp.toDate() : new Date(timeStamp);
+  if (isToday(date)) {
+    return "Today";
   }
 
-  export const formatLogDate = (timeStamp: any) => {
-    const date = timeStamp.toDate ? timeStamp.toDate() : new Date(timeStamp);
-    if (isToday(date)) {
-      return "Today";
-    }
+  return format(date, 'dd MMM, yyyy');
+}
 
-    return format(date, 'dd mm yyyy');
-  }
-
-  export const getPastelAlphaColor = (hex: string, alpha: number = 0.12): string => {
+export const getPastelAlphaColor = (hex: string, alpha: number = 0.12): string => {
   // Clean the string if it includes the hash symbol
   const cleanHex = hex.replace('#', '');
-  
+
   // Parse out the individual RGB decimal channels
   const r = parseInt(cleanHex.substring(0, 2), 16);
   const g = parseInt(cleanHex.substring(2, 4), 16);

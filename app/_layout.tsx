@@ -12,6 +12,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { TamaguiProvider } from "tamagui";
 
 // Prevent the splash screen from auto-hiding before fonts load
@@ -45,26 +46,28 @@ export default function RootLayout() {
   }
 
   return (
-    <TamaguiProvider
-      config={config}
-      defaultTheme={colorScheme === "dark" ? "dark" : "light"}
-    >
-      <StatusBar style="auto" />
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <QueryClientProvider client={queryClient}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="(protected)" />
-            <Stack.Screen name="sign_in" />
-            <Stack.Screen name="sign_up" />
-            <Stack.Screen name="welcome" />
-            <Stack.Screen name="onboarding" />
-          </Stack>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </TamaguiProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TamaguiProvider
+        config={config}
+        defaultTheme={colorScheme === "dark" ? "dark" : "light"}
+      >
+        <StatusBar style="auto" />
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <QueryClientProvider client={queryClient}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="(protected)" />
+              <Stack.Screen name="sign_in" />
+              <Stack.Screen name="sign_up" />
+              <Stack.Screen name="welcome" />
+              <Stack.Screen name="onboarding" />
+            </Stack>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </TamaguiProvider>
+    </GestureHandlerRootView>
   );
 }
