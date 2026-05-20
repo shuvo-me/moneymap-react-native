@@ -391,6 +391,7 @@ const MetricCard = ({
           mt="$1"
           col="$colorMuted"
           fsi="italic"
+          numberOfLines={1}
         >
           {subtext}
         </Text>

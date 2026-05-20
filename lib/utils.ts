@@ -3,7 +3,36 @@ import { format, isToday } from "date-fns";
 import { ALL_CATEGORIES } from "./constants";
 
 export const formatCurrency = (amount: number, currencySymbol: string = "$") => {
-  return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
+  if (!amount || amount === 0) return `${currencySymbol}0`;
+
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  let formattedValue = "";
+
+  // 1. Check Billion FIRST (Largest)
+  if (absAmount >= 1_000_000_000) {
+    const value = absAmount / 1_000_000_000;
+    formattedValue = `${value.toFixed(value % 1 === 0 ? 0 : 1)} b`;
+  }
+  // 2. Check Million SECOND
+  else if (absAmount >= 1_000_000) {
+    const value = absAmount / 1_000_000;
+    formattedValue = `${value.toFixed(value % 1 === 0 ? 0 : 1)} m`;
+  }
+  // 3. Check Lac THIRD
+  else if (absAmount >= 100_000) {
+    const value = absAmount / 100_000;
+    formattedValue = `${value.toFixed(value % 1 === 0 ? 0 : 1)} lac`;
+  }
+  // 4. Everything else (Standard formatting below 100k)
+  else {
+    formattedValue = absAmount.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+
+  return `${sign}${currencySymbol}${formattedValue}`;
 };
 
 export const getIconForCategory = (category: string) => {
