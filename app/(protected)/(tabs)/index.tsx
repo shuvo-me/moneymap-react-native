@@ -3,25 +3,28 @@ import { CategoryDistribution } from "@/components/CategoryDistribution";
 import { QuickLogSheet } from "@/components/QuickLogSheet";
 import TransactionRow from "@/components/TransactionRow";
 import { CURRENCIES } from "@/lib/constants";
-import { formatCurrency, formatLogDate, getIconForCategory } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatLogDate,
+  getIconForCategory,
+  getPastelAlphaColor,
+} from "@/lib/utils";
 import { logService } from "@/services/log.service";
 import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/store";
-import { ArrowRight, Coins, Inbox } from "@tamagui/lucide-icons-2";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Coins,
+  Inbox,
+} from "@tamagui/lucide-icons-2";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Spinner,
-  Text,
-  View,
-  XStack,
-  YStack,
-  styled
-} from "tamagui";
+import { Spinner, Text, View, XStack, YStack, styled, useTheme } from "tamagui";
 
 const ScreenContainer = styled(YStack, {
   flex: 1,
@@ -30,7 +33,6 @@ const ScreenContainer = styled(YStack, {
 });
 
 const HearthCard = styled(YStack, {
-  backgroundColor: "$primaryLow",
   br: "$9",
   p: "$6",
   shadowOffset: { width: 0, height: 4 },
@@ -43,7 +45,7 @@ export default function HearthDashboard() {
   const user = useAuthStore((state) => state.session);
   const [refreshing, setRefreshing] = useState(false);
   const [editLogId, setEditLogId] = useState<string | null>(null);
-
+  const theme = useTheme();
   const {
     data: settings,
     refetch: refetchSettings,
@@ -77,7 +79,11 @@ export default function HearthDashboard() {
     },
   });
 
-  const { mutate: deleteLog, isPending: deletePending, variables: deletingId } = useMutation({
+  const {
+    mutate: deleteLog,
+    isPending: deletePending,
+    variables: deletingId,
+  } = useMutation({
     mutationKey: ["deleteLogs", user?.uid],
     mutationFn: (logId: string) => logService.deleteLog(logId),
     onSuccess: async () => {
@@ -86,8 +92,8 @@ export default function HearthDashboard() {
     onError: (error) => {
       console.error("Delete Error:", error);
       Alert.alert("Error", "Failed to delete transaction.");
-    }
-  })
+    },
+  });
 
   const {
     monthlyBudget,
@@ -95,6 +101,8 @@ export default function HearthDashboard() {
     savingsRate,
     currencySymbol,
     monthlySpending,
+    exceededAmount,
+    isOverBudget,
   } = useMemo(() => {
     const budget = settings?.monthlyBudget || 0;
     const spending = logStats?.totalSpending || 0;
@@ -103,12 +111,17 @@ export default function HearthDashboard() {
     const currency = settings?.currency || "USD";
     const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
 
+    const isOverBudget = logStats?.totalSpending! > budget;
+    const exceededAmount = isOverBudget ? logStats?.totalSpending! - budget : 0;
+
     return {
       monthlyBudget: budget,
       utilization: util,
       savingsRate: Math.max(0, 100 - util),
       currencySymbol: symbol,
       monthlySpending: spending,
+      exceededAmount,
+      isOverBudget,
     };
   }, [settings, logStats]);
 
@@ -140,8 +153,6 @@ export default function HearthDashboard() {
     );
   }
 
-
-
   return (
     <ScreenContainer style={{ paddingTop: insets.top + 20 }}>
       <AppTopBar />
@@ -161,7 +172,15 @@ export default function HearthDashboard() {
         }
       >
         {/* Main Spending Card */}
-        <HearthCard mb="$5" mt={"$5"}>
+        <HearthCard
+          mb="$5"
+          mt={"$5"}
+          bg={
+            isOverBudget
+              ? getPastelAlphaColor(theme.error.get())
+              : "$primaryLow"
+          }
+        >
           <Text
             ff="$body"
             fos="$1"
@@ -174,7 +193,12 @@ export default function HearthDashboard() {
             SPENDING • THIS MONTH
           </Text>
           <XStack ai="baseline" gap="$2">
-            <Text ff="$heading" fos="$8" fow="800" col="$primary">
+            <Text
+              ff="$heading"
+              fos="$8"
+              fow="800"
+              col={isOverBudget ? theme.error.get() : "$primary"}
+            >
               {formatCurrency(logStats?.totalSpending || 0, currencySymbol)}
             </Text>
           </XStack>
@@ -188,8 +212,17 @@ export default function HearthDashboard() {
                 {formatCurrency(dailyAllowance, currencySymbol)} / day left
               </Text>
             </XStack>
-            <Text ff="$body" fos="$1" col="$primary" opacity={0.6} ml="$7">
-              To stay within your {formatCurrency(monthlyBudget, currencySymbol)} budget
+            <Text
+              ff="$body"
+              fos="$1"
+              // CHANGE: Switch color to red to match the warning theme context if budget is blown
+              col={isOverBudget ? "$red10" : "$primary"}
+              opacity={0.8}
+              ml="$7"
+            >
+              {isOverBudget
+                ? `Exceeded your ${formatCurrency(monthlyBudget, currencySymbol)} monthly limit!`
+                : `To stay within your ${formatCurrency(monthlyBudget, currencySymbol)} budget`}
             </Text>
           </YStack>
         </HearthCard>
@@ -203,14 +236,27 @@ export default function HearthDashboard() {
             progress={utilization}
           />
           <MetricCard
-            label="Savings Rate"
-            value={`${savingsRate.toFixed(1)}%`}
-            subtext='"Steady growth is freedom."'
-            isSavings
+            label={isOverBudget ? "Over Budget" : "Savings Rate"}
+            value={
+              isOverBudget
+                ? `-${formatCurrency(exceededAmount, currencySymbol)}`
+                : `${savingsRate.toFixed(1)}%`
+            }
+            subtext={
+              isOverBudget
+                ? '"Lower your expenses."'
+                : '"Steady growth is freedom."'
+            }
+            isSavings={!isOverBudget}
+            isDanger={isOverBudget}
+            Icon={isOverBudget ? AlertTriangle : Coins}
           />
         </XStack>
 
-        <CategoryDistribution logs={logStats?.all || []} monthlyBudget={monthlyBudget} />
+        <CategoryDistribution
+          logs={logStats?.all || []}
+          monthlyBudget={monthlyBudget}
+        />
 
         {/* Recent Activity */}
         <YStack mt={"$5"} gap={"$3"}>
@@ -218,7 +264,12 @@ export default function HearthDashboard() {
             <Text ff="$heading" fos="$4" fow="800" col="$color">
               Recent Activity
             </Text>
-            <XStack ai="center" gap="$2" pressStyle={{ opacity: 0.7 }} onPress={() => router.push('/history')}>
+            <XStack
+              ai="center"
+              gap="$2"
+              pressStyle={{ opacity: 0.7 }}
+              onPress={() => router.push("/history")}
+            >
               <Text col="$primary" fow="700" fos="$3" ff="$body">
                 View All
               </Text>
@@ -231,13 +282,16 @@ export default function HearthDashboard() {
               logStats.recent.map((log: any) => (
                 <TransactionRow
                   key={log.id}
-                  title={log.title || ''}
+                  title={log.title || ""}
                   category={log.category}
                   amount={`-${formatCurrency(log.amount, currencySymbol)}`}
                   Icon={getIconForCategory(log.category)}
                   time={formatLogDate(log.date)}
                   loading={deletePending && deletingId === log.id}
-                  onDelete={() => { console.log('delete', log.id); deleteLog(log.id); }}
+                  onDelete={() => {
+                    console.log("delete", log.id);
+                    deleteLog(log.id);
+                  }}
                   onPress={() => setEditLogId(log.id)}
                 />
               ))
@@ -254,8 +308,15 @@ export default function HearthDashboard() {
                 boc="$border"
               >
                 <Inbox size={32} color="$colorMuted" opacity={0.6} mb="$1" />
-                <Text ff="$body" col="$colorMuted" fos="$2" fow="500" ta="center">
-                  No transactions recorded yet. Log your first expense to begin tracking.
+                <Text
+                  ff="$body"
+                  col="$colorMuted"
+                  fos="$2"
+                  fow="500"
+                  ta="center"
+                >
+                  No transactions recorded yet. Log your first expense to begin
+                  tracking.
                 </Text>
               </YStack>
             )}
@@ -277,15 +338,16 @@ export default function HearthDashboard() {
 
 // --- Internal Helper Components ---
 
-const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
-  <YStack
-    f={1}
-    p="$4"
-    br="$7"
-    bg="$secondaryForeground"
-    jc="space-between"
-
-  >
+const MetricCard = ({
+  label,
+  value,
+  subtext,
+  progress,
+  isSavings,
+  isDanger,
+  Icon,
+}: any) => (
+  <YStack f={1} p="$4" br="$7" bg="$secondaryForeground" jc="space-between">
     <YStack>
       <Text
         ff="$body"
@@ -303,13 +365,14 @@ const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
         fos="$6"
         fow="800"
         mt="$1"
-        col={isSavings ? "$secondary" : "$color"}
+        col={isDanger ? "$error" : "$color"}
       >
         {value}
       </Text>
     </YStack>
-    {progress !== undefined ? (
-      <YStack mt="$4" gap="$2">
+
+    <YStack mt="$4" gap="$2">
+      {progress !== undefined && (
         <View h={6} w="100%" bg="$primaryLow" br="$full" ov="hidden">
           <View
             h="100%"
@@ -318,18 +381,20 @@ const MetricCard = ({ label, value, subtext, progress, isSavings }: any) => (
             br="$full"
           />
         </View>
-        <Text ff="$body" fos={10} fow="600" col="$colorMuted">
+      )}
+      {Icon && <Icon size={16} color={isSavings ? "$success" : "$error"} />}
+      {subtext && (
+        <Text
+          ff="$body"
+          fos={10}
+          lh={14}
+          mt="$1"
+          col="$colorMuted"
+          fsi="italic"
+        >
           {subtext}
         </Text>
-      </YStack>
-    ) : (
-      <Text ff="$body" fos={10} lh={14} mt="$4" col="$colorMuted" fsi="italic">
-        {subtext}
-      </Text>
-    )}
+      )}
+    </YStack>
   </YStack>
 );
-
-
-
-

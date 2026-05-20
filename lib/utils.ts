@@ -3,7 +3,7 @@ import { format, isToday } from "date-fns";
 import { ALL_CATEGORIES } from "./constants";
 
 export const formatCurrency = (amount: number, currencySymbol: string = "$") => {
-  return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
 };
 
 export const getIconForCategory = (category: string) => {
