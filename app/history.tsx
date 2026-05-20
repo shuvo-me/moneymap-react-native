@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { Alert, RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Spinner, Text, useTheme, XStack, YStack } from 'tamagui';
 
@@ -22,7 +22,7 @@ export default function HistoryAnalysisScreen() {
     const userSettings = queryClient.getQueryData<any>(['userSettings', user?.uid]);
     const firstDayOfWeek = userSettings?.startOfWeek || 0;
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
+    const [exporting, setExporting] = useState(false);
 
     const {
         data: logStats,
@@ -48,6 +48,25 @@ export default function HistoryAnalysisScreen() {
         }
     });
 
+    // Export handler
+    const handleExport = async () => {
+
+        if (!logStats?.all || logStats.all.length === 0) {
+            Alert.alert("No Data", "There are no transactions to export.");
+            return;
+        }
+
+        try {
+            setExporting(true);
+            await logService.exportToCSV(logStats.all, 'My_Expense_Report');
+        } catch (error) {
+            console.error("Export Error:", error);
+            Alert.alert("Export Failed", "Could not export transactions. Please try again.");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <YStack f={1} bg="$background" pt={inset.top + 20}>
             {/* --- Header --- */}
@@ -57,11 +76,14 @@ export default function HistoryAnalysisScreen() {
                     <Text ff="$heading" fos="$6" fow="800" col="$primary">History</Text>
                 </XStack>
                 <Button
-                    iconAfter={DownloadCloud}
+
                     size="$3"
                     bg="$primaryLow"
                     pressStyle={{ scale: 0.95 }}
-                >Export</Button>
+                    onPress={handleExport}
+                    disabled={isRefetching || exporting}
+                    iconAfter={exporting ? <Spinner size={'small'} color={theme.primary.get()} /> : <DownloadCloud />}
+                >{exporting ? 'Exporting...' : 'Export'}</Button>
 
             </XStack>
 

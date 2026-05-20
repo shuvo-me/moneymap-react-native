@@ -1,5 +1,7 @@
 import { auth, db } from '@/config/firebase';
-import { endOfDay, parseISO, startOfDay } from 'date-fns';
+import { endOfDay, format, parseISO, startOfDay } from 'date-fns';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import {
     addDoc,
     collection,
@@ -67,40 +69,40 @@ export const logService = {
     },
 
     async fetchLogs(
-    filters: LogFilter = { categoryType: 'all', timeRange: 'none' },
-    userId: string,
-    anchorDateString?: string
-): Promise<ExpenseLog[]> {
-    if (!userId) throw new Error("User must be authenticated");
+        filters: LogFilter = { categoryType: 'all', timeRange: 'none' },
+        userId: string,
+        anchorDateString?: string
+    ): Promise<ExpenseLog[]> {
+        if (!userId) throw new Error("User must be authenticated");
 
-    const logRef = collection(db, COLLECTION_NAME);
+        const logRef = collection(db, COLLECTION_NAME);
 
-    const constraints: any[] = [
-        where("userId", "==", userId),
-    ];
+        const constraints: any[] = [
+            where("userId", "==", userId),
+        ];
 
-    if (filters.categoryType !== 'all') {
-        constraints.push(where("category", "==", filters.categoryType));
-    }
+        if (filters.categoryType !== 'all') {
+            constraints.push(where("category", "==", filters.categoryType));
+        }
 
-    // 2. FILTER BY DATE RANGE (range filters after equality)
-    if (filters.timeRange === 'day' && anchorDateString) {
-        const anchorDate = parseISO(anchorDateString);
-        constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
-        constraints.push(where("createdAt", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
-    }
+        // 2. FILTER BY DATE RANGE (range filters after equality)
+        if (filters.timeRange === 'day' && anchorDateString) {
+            const anchorDate = parseISO(anchorDateString);
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
+            constraints.push(where("createdAt", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
+        }
 
-    constraints.push(orderBy("createdAt", "desc"));
+        constraints.push(orderBy("createdAt", "desc"));
 
-    const q = query(logRef, ...constraints);
-    const querySnapshot = await getDocs(q);
+        const q = query(logRef, ...constraints);
+        const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as ExpenseLog[];
-    
-},
+        return querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as ExpenseLog[];
+
+    },
 
     /**
      * UPDATE: Edit an existing log
@@ -122,5 +124,58 @@ export const logService = {
 
         const logRef = doc(db, COLLECTION_NAME, logId);
         return await deleteDoc(logRef);
+    },
+
+    async exportToCSV(logs: ExpenseLog[], fileNamePrefix: string = 'MoneyMap_Statement') {
+        if (!logs || logs.length === 0) {
+            throw new Error("No data available to export");
+        }
+
+        try {
+            // 1. Build standard ledger headers
+            const headers = ['Title', 'Date', 'Category', 'Amount', 'Note'];
+
+            // 2. Map row entries safely escaping any string tokens
+            const rows = logs.map(log => {
+                const formattedDate = log.date
+                    ? format(log.date.toDate(), 'yyyy-MM-dd HH:mm')
+                    : '';
+                // Escape double quotes to prevent breaking csv layout formatting
+                const escapedTitle = `"${(log.title || '').replace(/"/g, '""')}"`;
+                const category = `"${log.category || ''}"`;
+                const amount = log.amount || 0;
+                const escapedNote = `"${(log.note || '').replace(/"/g, '""')}"`;
+
+                return [escapedTitle, formattedDate, category, amount, escapedNote].join(',');
+            });
+
+            // Combine headers and rows with line breaks
+            const csvContent = [headers.join(','), ...rows].join('\n');
+
+            // 3. Create file in document directory using modern API
+            const timestamp = format(new Date(), 'yyyyMMdd_HHmmss');
+            const fileName = `${fileNamePrefix}_${timestamp}.csv`;
+
+            const file = new File(Paths.document, fileName);
+
+            // 4. Write CSV content to file
+            file.write(csvContent);
+
+            // 5. Share the file using native share dialog
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(file.uri, {
+                    mimeType: 'text/csv',
+                    dialogTitle: 'Export Expense Report Statement',
+                    UTI: 'public.comma-separated-values-text', // iOS metadata for CSV files
+                });
+            } else {
+                throw new Error("Sharing capability is not available on this device");
+            }
+
+            return file.uri;
+        } catch (error) {
+            console.error('Export Engine Failure:', error);
+            throw error;
+        }
     }
 };
