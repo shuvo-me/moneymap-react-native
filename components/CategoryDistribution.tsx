@@ -1,107 +1,108 @@
-import { ALL_CATEGORIES } from '@/lib/constants'; // Import your category metadata
-import { ExpenseLog } from '@/services/log.service';
-import { Circle, Svg } from 'react-native-svg';
-import { Text, useTheme, View, XStack, YStack } from 'tamagui';
+import { ALL_CATEGORIES } from "@/lib/constants";
+import { ExpenseLog } from "@/services/log.service";
+import { PieChart } from "react-native-chart-kit";
+import { Text, useTheme, View, XStack, YStack } from "tamagui";
 
 interface CategoryDistributionProps {
   logs?: ExpenseLog[];
   monthlyBudget?: number;
 }
 
-export const CategoryDistribution = ({ logs = [], monthlyBudget }: CategoryDistributionProps) => {
-  const circumference = 301.59;
+export const CategoryDistribution = ({
+  logs = [],
+  monthlyBudget,
+}: CategoryDistributionProps) => {
   const tamaguiTheme = useTheme();
 
-  const categoryTotals = logs.reduce((acc, log) => {
-    acc[log.category] = (acc[log.category] || 0) + log.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  // Calculate category totals
+  const categoryTotals = logs.reduce(
+    (acc, log) => {
+      acc[log.category] = (acc[log.category] || 0) + log.amount;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
+  // Transform to chart data structure
+  const actualCategories = Object.entries(categoryTotals)
+    .map(([id, amount]) => {
+      const metadata = ALL_CATEGORIES.find((c) => c.id === id);
+      return {
+        id,
+        label: metadata?.label || id.charAt(0).toUpperCase() + id.slice(1),
+        percentage: monthlyBudget! > 0 ? (amount / monthlyBudget!) * 100 : 0,
+        amount,
+        themeColor: metadata?.chartColor,
+        hexColor: metadata?.chartColor || "#A0A0A0",
+        isPlaceholder: false,
+      };
+    })
+    .sort((a, b) => b.percentage - a.percentage);
 
-
-  const actualCategories = Object.entries(categoryTotals).map(([id, amount]) => {
-    const metadata = ALL_CATEGORIES.find(c => c.id === id);
-    return {
-      id,
-      label: metadata?.label || id.charAt(0).toUpperCase() + id.slice(1),
-      percentage: monthlyBudget! > 0 ? (amount / monthlyBudget!) * 100 : 0,
-      amount,
-      themeColor: metadata?.chartColor,
-      hexColor: metadata?.chartColor,
-      isPlaceholder: false
-    };
-  }).sort((a, b) => b.percentage - a.percentage);
-
+  // Get top 4 categories or fill with placeholders
   let topCategories = [...actualCategories.slice(0, 4)];
 
   if (topCategories.length < 4) {
-
-    const usedIds = topCategories.map(c => c.id);
-    const placeholders = ALL_CATEGORIES
-      .filter(c => !usedIds.includes(c.id))
+    const usedIds = topCategories.map((c) => c.id);
+    const placeholders = ALL_CATEGORIES.filter((c) => !usedIds.includes(c.id))
       .slice(0, 4 - topCategories.length)
-      .map(c => ({
+      .map((c) => ({
         id: c.id,
         label: c.label,
         percentage: 0,
         amount: 0,
         themeColor: c.chartColor,
-        hexColor: c.chartColor,
-        isPlaceholder: true
+        hexColor: c.chartColor || "#E0E0E0",
+        isPlaceholder: true,
       }));
 
     topCategories = [...topCategories, ...placeholders];
   }
 
-  let accumulatedOffset = 0;
+  // 2. Map structural values to react-native-chart-kit configuration schemas
+  const chartData = topCategories.map((cat) => ({
+    name: cat.label,
+    // If percentage is 0, give it a tiny fractional slice so the placeholder segment renders visually
+    population: cat.percentage > 0 ? cat.percentage : 0.1,
+    color: cat.isPlaceholder ? `${cat.hexColor}4D` : cat.hexColor, // Adds 30% alpha hex opacity for placeholders
+    legendFontColor: tamaguiTheme.colorMuted?.get() || "#7F7F7F",
+    legendFontSize: 11,
+  }));
 
   return (
-    <YStack bg="$card" br="$7" p="$5" shadowColor="$foreground" shadowOpacity={0.02} shadowRadius={20}>
-      <Text ff="$heading" fos="$3" fow="800" col="$color" mb="$6">
+    <YStack
+      bg="$card"
+      br="$7"
+      p="$5"
+      shadowColor="$foreground"
+      shadowOpacity={0.02}
+      shadowRadius={20}
+    >
+      <Text ff="$heading" fos="$3" fow="800" col="$color" mb="$4">
         Category Distribution
       </Text>
 
-      <XStack ai="center" gap="$8">
-        <View w={112} h={112} ai="center" jc="center" pos="relative">
-          <Svg width="112" height="112" style={{ transform: [{ rotate: '-90deg' }] }}>
-            <Circle
-              cx="56"
-              cy="56"
-              r="48"
-              stroke={tamaguiTheme.primaryLow.get()}
-              strokeWidth="12"
-              fill="transparent"
-            />
-            {topCategories.map((cat) => {
-              const offset = accumulatedOffset;
-              accumulatedOffset += cat.percentage / 100;
-              return (
-                <Circle
-                  key={cat.id}
-                  cx="56"
-                  cy="56"
-                  r="48"
-                  stroke={cat.hexColor}
-                  strokeWidth="12"
-                  fill="transparent"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference * (1 - cat.percentage / 100)}
-                  transform={`rotate(${offset * 360}, 56, 56)`}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </Svg>
-
-          <YStack pos="absolute" ai="center" jc="center">
-            <Text ff={'$body'} fos={'$2'} fow={'$5'} col={'$color'}>Top</Text>
-            <Text ff="$body" fos="$3" fow="800" col="$color">
-              {topCategories[0]?.label || '-'}
-            </Text>
-          </YStack>
+      <XStack ai="center" jc="space-between">
+        {/* Pie Chart Wrapper Frame Layout container */}
+        <View w={140} h={140} jc="center" ai="center" pos="relative">
+          <PieChart
+            data={chartData}
+            width={150}
+            height={150}
+            chartConfig={{
+              color: (opacity = 0.5) => `rgba(0, 0, 0, ${opacity})`,
+            }}
+            accessor={"population"}
+            backgroundColor={"transparent"}
+            paddingLeft={"35"}
+            center={[0, 0]}
+            absolute
+            hasLegend={false}
+          />
         </View>
 
-        <YStack f={1} gap="$3">
+        {/* Re-utilized Clean Custom Tamagui Layout Legend Section */}
+        <YStack f={1} gap="$2.5" ml="$4">
           {topCategories.length > 0 ? (
             topCategories.map((cat) => (
               <LegendItem
@@ -109,10 +110,13 @@ export const CategoryDistribution = ({ logs = [], monthlyBudget }: CategoryDistr
                 label={cat.label}
                 percentage={`${cat.percentage.toFixed(1)}%`}
                 color={cat.themeColor}
+                isPlaceholder={cat.isPlaceholder}
               />
             ))
           ) : (
-            <Text ff="$body" fos="$1" col="$colorMuted">No data logged yet.</Text>
+            <Text ff="$body" fos="$1" col="$colorMuted">
+              No data logged yet.
+            </Text>
           )}
         </YStack>
       </XStack>
@@ -120,11 +124,33 @@ export const CategoryDistribution = ({ logs = [], monthlyBudget }: CategoryDistr
   );
 };
 
-const LegendItem = ({ label, percentage, color }: { label: string; percentage: string; color: any }) => (
-  <XStack jc="space-between" ai="center">
+const LegendItem = ({
+  label,
+  percentage,
+  color,
+  isPlaceholder,
+}: {
+  label: string;
+  percentage: string;
+  color: any;
+  isPlaceholder: boolean;
+}) => (
+  <XStack jc="space-between" ai="center" opacity={isPlaceholder ? 0.5 : 1}>
     <XStack ai="center" gap="$2">
-      <View w={8} h={8} br="$full" bg={color} />
-      <Text ff="$body" fos={11} fow="600" col="$colorMuted">
+      <View
+        w={8}
+        h={8}
+        br="$full"
+        bg={color}
+        opacity={isPlaceholder ? 0.3 : 1}
+      />
+      <Text
+        ff="$body"
+        fos={11}
+        fow="600"
+        col="$colorMuted"
+        textTransform="capitalize"
+      >
         {label}
       </Text>
     </XStack>
