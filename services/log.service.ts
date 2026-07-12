@@ -1,5 +1,5 @@
 import { auth, db } from '@/config/firebase';
-import { endOfDay, format, parseISO, startOfDay } from 'date-fns';
+import { endOfDay, endOfMonth, format, parseISO, startOfDay, startOfMonth } from 'date-fns';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import {
@@ -104,6 +104,16 @@ export const logService = {
             const anchorDate = parseISO(anchorDateString);
             constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
             constraints.push(where("createdAt", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
+        }
+
+        if (filters.timeRange === 'month') {
+            const now = new Date();
+
+            const monthStart = startOfMonth(now);
+            const monthEnd = endOfMonth(now);
+
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(monthStart)));
+            constraints.push(where("createdAt", "<=", Timestamp.fromDate(monthEnd)));
         }
 
         constraints.push(orderBy("createdAt", "desc"));
