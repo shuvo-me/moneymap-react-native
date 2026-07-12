@@ -102,13 +102,12 @@ export const logService = {
         // 2. FILTER BY DATE RANGE (range filters after equality)
         if (filters.timeRange === 'day' && anchorDateString) {
             const anchorDate = parseISO(anchorDateString);
-            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
-            constraints.push(where("createdAt", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
+            constraints.push(where("date", ">=", Timestamp.fromDate(startOfDay(anchorDate))));
+            constraints.push(where("date", "<=", Timestamp.fromDate(endOfDay(anchorDate))));
         }
 
         if (filters.timeRange === 'month') {
             const now = new Date();
-
             const monthStart = startOfMonth(now);
             const monthEnd = endOfMonth(now);
 
