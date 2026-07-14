@@ -1,19 +1,19 @@
 import { ALL_CATEGORIES } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
 import { ExpenseLog } from "@/services/log.service";
-import { PieChart } from "react-native-chart-kit";
-import { Text, useTheme, View, XStack, YStack } from "tamagui";
+import { Circle, Text, View, XStack, YStack } from "tamagui";
 
 interface CategoryDistributionProps {
   logs?: ExpenseLog[];
   monthlyBudget?: number;
+  currencySymbol?: string;
 }
 
 export const CategoryDistribution = ({
   logs = [],
   monthlyBudget,
+  currencySymbol = "$",
 }: CategoryDistributionProps) => {
-  const tamaguiTheme = useTheme();
-
   // Calculate category totals
   const categoryTotals = logs.reduce(
     (acc, log) => {
@@ -59,103 +59,86 @@ export const CategoryDistribution = ({
     topCategories = [...topCategories, ...placeholders];
   }
 
-  // 2. Map structural values to react-native-chart-kit configuration schemas
-  const chartData = topCategories.map((cat) => ({
-    name: cat.label,
-    // If percentage is 0, give it a tiny fractional slice so the placeholder segment renders visually
-    population: cat.percentage > 0 ? cat.percentage : 0.1,
-    color: cat.isPlaceholder ? `${cat.hexColor}4D` : cat.hexColor, // Adds 30% alpha hex opacity for placeholders
-    legendFontColor: tamaguiTheme.colorMuted?.get() || "#7F7F7F",
-    legendFontSize: 11,
-  }));
+  // Filter out zero-placeholder segments for the stacked bar
+  const barSegments = topCategories.filter(
+    (cat) => !cat.isPlaceholder && cat.percentage > 0,
+  );
 
   return (
     <YStack
       bg="$card"
       br="$7"
       p="$5"
-      shadowColor="$foreground"
-      shadowOpacity={0.02}
-      shadowRadius={20}
+      gap="$4"
+      borderWidth={1}
+      borderColor="$borderColor"
     >
-      <Text ff="$heading" fos="$3" fow="800" col="$color" mb="$4">
-        Category Distribution
+      <Text ff="$heading" fos="$3" fow="800" col="$color">
+        Category Breakdown
       </Text>
 
-      <XStack ai="center" jc="space-between">
-        {/* Pie Chart Wrapper Frame Layout container */}
-        <View w={140} h={140} jc="center" ai="center" pos="relative">
-          <PieChart
-            data={chartData}
-            width={150}
-            height={150}
-            chartConfig={{
-              color: (opacity = 0.5) => `rgba(0, 0, 0, ${opacity})`,
-            }}
-            accessor={"population"}
-            backgroundColor={"transparent"}
-            paddingLeft={"35"}
-            center={[0, 0]}
-            absolute
-            hasLegend={false}
-          />
-        </View>
+      {/* Stacked horizontal bar */}
+      {barSegments.length > 0 ? (
+        <XStack h={10} br="$full" ov="hidden" gap={2}>
+          {barSegments.map((cat, index) => (
+            <View
+              key={cat.id}
+              h="100%"
+              flex={cat.percentage}
+              bg={cat.hexColor}
+              br={index === barSegments.length - 1 ? "$full" : 0}
+            />
+          ))}
+        </XStack>
+      ) : (
+        <View h={10} bg="$primaryLow" br="$full" opacity={0.3} />
+      )}
 
-        {/* Re-utilized Clean Custom Tamagui Layout Legend Section */}
-        <YStack f={1} gap="$2.5" ml="$4">
-          {topCategories.length > 0 ? (
-            topCategories.map((cat) => (
-              <LegendItem
-                key={cat.id}
-                label={cat.label}
-                percentage={`${cat.percentage.toFixed(1)}%`}
-                color={cat.themeColor}
-                isPlaceholder={cat.isPlaceholder}
-              />
-            ))
-          ) : (
-            <Text ff="$body" fos="$1" col="$colorMuted">
-              No data logged yet.
-            </Text>
-          )}
-        </YStack>
-      </XStack>
+      {/* Category rows */}
+      <YStack gap="$3">
+        {topCategories.length > 0 ? (
+          topCategories.map((cat) => (
+            <XStack
+              key={cat.id}
+              ai="center"
+              jc="space-between"
+              opacity={cat.isPlaceholder ? 0.4 : 1}
+            >
+              <XStack ai="center" gap="$3" f={1}>
+                <Circle size={10} bg={cat.hexColor} />
+                <Text
+                  ff="$body"
+                  fos="$2"
+                  fow="600"
+                  col="$color"
+                  textTransform="capitalize"
+                >
+                  {cat.label}
+                </Text>
+              </XStack>
+              <XStack ai="center" gap="$3">
+                <Text ff="$body" fos="$2" fow="700" col="$color">
+                  {formatCurrency(cat.amount, currencySymbol)}
+                </Text>
+                <Text
+                  ff="$body"
+                  fos="$1"
+                  fow="600"
+                  col="$colorMuted"
+                  w={42}
+                  ta="right"
+                >
+                  {cat.percentage.toFixed(0)}%
+                </Text>
+              </XStack>
+            </XStack>
+          ))
+        ) : (
+          <Text ff="$body" fos="$2" col="$colorMuted">
+            No data logged yet.
+          </Text>
+        )}
+      </YStack>
     </YStack>
   );
 };
-
-const LegendItem = ({
-  label,
-  percentage,
-  color,
-  isPlaceholder,
-}: {
-  label: string;
-  percentage: string;
-  color: any;
-  isPlaceholder: boolean;
-}) => (
-  <XStack jc="space-between" ai="center" opacity={isPlaceholder ? 0.5 : 1}>
-    <XStack ai="center" gap="$2">
-      <View
-        w={8}
-        h={8}
-        br="$full"
-        bg={color}
-        opacity={isPlaceholder ? 0.3 : 1}
-      />
-      <Text
-        ff="$body"
-        fos={11}
-        fow="600"
-        col="$colorMuted"
-        textTransform="capitalize"
-      >
-        {label}
-      </Text>
-    </XStack>
-    <Text ff="$body" fos={11} fow="700" col="$color">
-      {percentage}
-    </Text>
-  </XStack>
-);

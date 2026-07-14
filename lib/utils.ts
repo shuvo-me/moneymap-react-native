@@ -63,3 +63,38 @@ export const getPastelAlphaColor = (hex: string, alpha: number = 0.12): string =
 
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+export const groupLogsByDate = (logs: any[]) => {
+  const groups: Record<string, any[]> = {};
+  logs.forEach((log) => {
+    const date = log.date?.toDate ? log.date.toDate() : new Date(log.date);
+    const key = isToday(date) ? "Today" : format(date, "EEEE, MMM d");
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(log);
+  });
+  return Object.entries(groups);
+};
+
+// SVG Arc helpers for semi-circular gauge
+const polarToCartesian = (
+  cx: number,
+  cy: number,
+  r: number,
+  angle: number,
+) => ({
+  x: cx + r * Math.cos(angle),
+  y: cy - r * Math.sin(angle),
+});
+
+export const describeArc = (
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+) => {
+  const start = polarToCartesian(cx, cy, r, startAngle);
+  const end = polarToCartesian(cx, cy, r, endAngle);
+  const largeArc = startAngle - endAngle > Math.PI ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+};
